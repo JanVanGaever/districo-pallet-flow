@@ -228,14 +228,24 @@ function Wizard({
           <div className="mt-2 flex items-center gap-4">
             <Button variant="outline" size="icon" className="size-12" onClick={() => setAantal(Math.max(1, aantal - 1))}><Minus /></Button>
             <span className="w-12 text-center text-2xl font-bold">{aantal}</span>
-            <Button variant="outline" size="icon" className="size-12" onClick={() => setAantal(aantal + 1)}><Plus /></Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-12"
+              disabled={aantal >= maxToevoegen}
+              onClick={() => setAantal(Math.min(maxToevoegen, aantal + 1))}
+            >
+              <Plus />
+            </Button>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={addLine}><Plus className="size-4" /> Toevoegen aan retour</Button>
+            <Button onClick={addLine} disabled={maxToevoegen === 0}><Plus className="size-4" /> Toevoegen aan retour</Button>
           </div>
         </div>
       )}
+
 
       {cart.length > 0 && (
         <div className="mt-6 border-t pt-4">

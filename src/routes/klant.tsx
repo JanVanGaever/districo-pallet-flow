@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   CATEGORIES,
@@ -7,15 +7,21 @@ import {
   Customer,
   Product,
   PalletType,
-  bevestigRetour,
-  fetchCustomers,
+  
+  fetchDefaultCustomer,
   fetchPalletTypes,
   fetchProducts,
+  fetchRetoursForCustomer,
+  getOrCreateConceptRetour,
+  addLineToRetour,
+  removePalletFromRetour,
+  deleteConceptRetour,
+  submitRetour,
 } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/klant")({
@@ -34,26 +40,54 @@ const catSlot: Record<string, string> = {
   frisdrank: "bg-success text-success-foreground border-success",
 };
 
+
 function KlantPage() {
   const navigate = useNavigate();
-  const { data: customers } = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers });
+  const qc = useQueryClient();
+  const { data: customer } = useQuery({ queryKey: ["default-customer"], queryFn: fetchDefaultCustomer });
   const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: palletTypes } = useQuery({ queryKey: ["palletTypes"], queryFn: fetchPalletTypes });
+  const { data: retours } = useQuery({
+    queryKey: ["customer-retours", customer?.id],
+    queryFn: () => fetchRetoursForCustomer(customer!.id),
+    enabled: !!customer,
+  });
 
-  const [customerId, setCustomerId] = useState<string>("");
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const [conceptId, setConceptId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const customer = customers?.find((c) => c.id === customerId);
+  const concept = (retours ?? []).find((r) => r.status === "concept") ?? null;
+  const ingediend = (retours ?? []).filter((r) => r.status !== "concept");
 
-  async function confirm() {
-    if (!customer || cart.length === 0) return;
+  const allPallets = ingediend.flatMap((r) => r.pallets ?? []);
+  const palletStats = {
+    totaal: allPallets.length,
+    klaar: allPallets.filter((p: any) => p.status === "klaar_voor_retour").length,
+    ontvangen: allPallets.filter((p: any) => p.status === "ontvangen").length,
+  };
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: ["customer-retours", customer?.id] });
+  }
+
+  async function openWizard() {
+    if (!customer) return;
+    const c = await getOrCreateConceptRetour(customer);
+    setConceptId(c.id);
+    setWizardOpen(true);
+    invalidate();
+  }
+
+  async function submit() {
+    if (!customer || !concept) return;
     setBusy(true);
     try {
-      const { retour } = await bevestigRetour(customer, cart);
-      toast.success(`Retour ${retour.retournummer} aangemaakt`);
-      navigate({ to: "/klant/print/$retourId", params: { retourId: retour.id } });
+      await submitRetour(concept, customer);
+      toast.success(`Retour ${concept.retournummer} ingediend`);
+      setWizardOpen(false);
+      invalidate();
+      navigate({ to: "/klant/print/$retourId", params: { retourId: concept.id } });
     } catch (e: any) {
       toast.error("Er ging iets mis: " + e.message);
     } finally {
@@ -61,70 +95,159 @@ function KlantPage() {
     }
   }
 
+  async function discardConcept() {
+    if (!concept) return;
+    if (!confirm("Lopende retour verwijderen?")) return;
+    await deleteConceptRetour(concept.id);
+    setWizardOpen(false);
+    invalidate();
+    toast.success("Lopende retour verwijderd");
+  }
+
+  if (!customer) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader title="Klantenportaal" />
+        <main className="mx-auto max-w-4xl px-6 py-8 text-muted-foreground">Laden…</main>
+      </div>
+    );
+  }
+
+  const conceptPallets = concept?.pallets ?? [];
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader title="Klantenportaal" />
-      <main className="mx-auto max-w-3xl px-6 py-8">
+      <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
+        {/* Klant header */}
         <div className="rounded-xl border bg-card p-5">
-          <label className="text-sm font-medium">Kies klant</label>
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="mt-2 w-full rounded-lg border bg-background px-3 py-2.5 text-sm"
-          >
-            <option value="">— Selecteer een klant —</option>
-            {customers?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.naam} (klantnr {c.klantnummer})
-              </option>
-            ))}
-          </select>
-          {customer && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {customer.naam} · klantnr {customer.klantnummer} · {customer.plaats}
-            </p>
-          )}
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Welkom</p>
+          <h2 className="mt-1 text-2xl font-bold">{customer.naam}</h2>
+          <p className="text-sm text-muted-foreground">Klantnr {customer.klantnummer} · {customer.plaats}</p>
         </div>
 
-        {customer && !wizardOpen && (
-          <div className="mt-8 text-center">
-            <Button size="lg" className="h-16 px-10 text-lg" onClick={() => { setWizardOpen(true); setCart([]); }}>
-              <Plus className="mr-2 size-6" /> Nieuwe retour
-            </Button>
+        {/* Pallet-overzicht */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Pallets ingediend", value: palletStats.totaal },
+            { label: "Klaar voor retour", value: palletStats.klaar },
+            { label: "Ontvangen", value: palletStats.ontvangen },
+          ].map((c) => (
+            <div key={c.label} className="rounded-xl border bg-card p-5">
+              <p className="text-sm text-muted-foreground">{c.label}</p>
+              <p className="mt-1 text-3xl font-bold">{c.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Lopende retour */}
+        {wizardOpen && conceptId && products && palletTypes ? (
+          <Wizard
+            customer={customer}
+            retourId={conceptId}
+            pallets={conceptPallets}
+            products={products}
+            palletTypes={palletTypes}
+            onChange={invalidate}
+            onClose={() => setWizardOpen(false)}
+            onSubmit={submit}
+            onDiscard={discardConcept}
+            busy={busy}
+          />
+        ) : (
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Lopende retour</h3>
+              {concept && <span className="text-sm text-muted-foreground">{concept.retournummer}</span>}
+            </div>
+            {concept && conceptPallets.length > 0 ? (
+              <div className="mt-3">
+                <p className="text-sm text-muted-foreground">
+                  {conceptPallets.length} van {MAX_PALLETS} pallets ingegeven — nog niet ingediend.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button onClick={openWizard}><Pencil className="size-4" /> Verder bewerken</Button>
+                  <Button variant="success" onClick={submit} disabled={busy}>
+                    <Check className="size-4" /> Indienen
+                  </Button>
+                  <Button variant="outline" onClick={discardConcept}><Trash2 className="size-4" /> Verwijderen</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <p className="text-sm text-muted-foreground">Geen lopende retour. Start een nieuwe retour.</p>
+                <Button className="mt-3" size="lg" onClick={openWizard}><Plus className="size-5" /> Nieuwe retour</Button>
+              </div>
+            )}
           </div>
         )}
 
-        {customer && wizardOpen && products && palletTypes && (
-          <Wizard
-            products={products}
-            palletTypes={palletTypes}
-            cart={cart}
-            setCart={setCart}
-            onClose={() => setWizardOpen(false)}
-            onConfirm={confirm}
-            busy={busy}
-          />
-        )}
+        {/* Vorige retours */}
+        <div className="rounded-xl border bg-card">
+          <div className="border-b px-5 py-4">
+            <h3 className="font-semibold">Vorige retours</h3>
+          </div>
+          {ingediend.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-muted-foreground">Nog geen ingediende retours.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3 font-medium">Retournummer</th>
+                  <th className="px-5 py-3 font-medium">Datum</th>
+                  <th className="px-5 py-3 font-medium">Pallets</th>
+                  <th className="px-5 py-3 font-medium">Ontvangen</th>
+                  <th className="px-5 py-3 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {ingediend.map((r) => {
+                  const pl = r.pallets ?? [];
+                  const ontv = pl.filter((p: any) => p.status === "ontvangen").length;
+                  return (
+                    <tr key={r.id} className="border-t">
+                      <td className="px-5 py-3 font-medium">{r.retournummer}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
+                      <td className="px-5 py-3">{pl.length}</td>
+                      <td className="px-5 py-3">{ontv} / {pl.length}</td>
+                      <td className="px-5 py-3 text-right">
+                        <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                          <FileText className="size-4" /> QR-codes
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </main>
     </div>
   );
 }
 
 function Wizard({
+  customer,
+  retourId,
+  pallets,
   products,
   palletTypes,
-  cart,
-  setCart,
+  onChange,
   onClose,
-  onConfirm,
+  onSubmit,
+  onDiscard,
   busy,
 }: {
+  customer: Customer;
+  retourId: string;
+  pallets: any[];
   products: Product[];
   palletTypes: PalletType[];
-  cart: CartLine[];
-  setCart: (c: CartLine[]) => void;
+  onChange: () => void;
   onClose: () => void;
-  onConfirm: () => void;
+  onSubmit: () => void;
+  onDiscard: () => void;
   busy: boolean;
 }) {
   const [step, setStep] = useState(1);
@@ -133,6 +256,7 @@ function Wizard({
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
   const [aantal, setAantal] = useState(1);
+  const [working, setWorking] = useState(false);
 
   const grouped = useMemo(() => {
     const q = search.toLowerCase();
@@ -142,32 +266,65 @@ function Wizard({
     })).filter((g) => g.items.length > 0);
   }, [products, search]);
 
-  const totaal = cart.reduce((s, l) => s + l.aantal, 0);
+  const totaal = pallets.length;
   const resterend = MAX_PALLETS - totaal;
   const maxToevoegen = Math.max(0, resterend);
-  const slots = cart.flatMap((l) =>
-    Array.from({ length: l.aantal }, () => ({ product: l.product, palletType: l.palletType })),
-  );
 
-  function addLine() {
+  const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
+
+  // Group persisted pallets into lines for a compact list
+  const lines = useMemo(() => {
+    const map = new Map<string, { naam: string; categorie: string; type: string; ids: string[] }>();
+    for (const p of sortedPallets) {
+      const key = `${p.product_id}|${p.pallet_type_id}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { naam: p.products?.naam ?? "?", categorie: p.products?.categorie ?? "", type: p.pallet_types?.naam ?? "", ids: [] };
+        map.set(key, g);
+      }
+      g.ids.push(p.id);
+    }
+    return Array.from(map.values());
+  }, [sortedPallets]);
+
+  async function addLine() {
     if (!product) return;
     if (aantal > maxToevoegen) {
       toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
       return;
     }
-    setCart([...cart, { product, palletType, aantal }]);
-    setStep(1);
-    setProduct(null);
-    setPalletType(defaultType);
-    setAantal(1);
-    toast.success(`${aantal}× ${product.naam} toegevoegd`);
+    setWorking(true);
+    try {
+      await addLineToRetour(retourId, customer, { product, palletType, aantal });
+      onChange();
+      setStep(1);
+      setProduct(null);
+      setPalletType(defaultType);
+      setAantal(1);
+      toast.success(`${aantal}× ${product.naam} toegevoegd`);
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
   }
 
+  async function removeOne(id: string) {
+    setWorking(true);
+    try {
+      await removePalletFromRetour(id, retourId);
+      onChange();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
 
   return (
-    <div className="mt-6 rounded-xl border bg-card p-5">
+    <div className="rounded-xl border bg-card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Nieuwe retour</h2>
+        <h2 className="font-semibold">Lopende retour bewerken</h2>
         <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">Sluiten</button>
       </div>
 
@@ -244,11 +401,10 @@ function Wizard({
           <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={addLine} disabled={maxToevoegen === 0}><Plus className="size-4" /> Toevoegen aan retour</Button>
+            <Button onClick={addLine} disabled={maxToevoegen === 0 || working}><Plus className="size-4" /> Toevoegen aan retour</Button>
           </div>
         </div>
       )}
-
 
       <div className="mt-6 border-t pt-4">
         <div className="flex items-center justify-between">
@@ -261,22 +417,19 @@ function Wizard({
 
         {/* Voortgangsbalk */}
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${(totaal / MAX_PALLETS) * 100}%` }}
-          />
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(totaal / MAX_PALLETS) * 100}%` }} />
         </div>
 
         {/* Visueel rooster van 33 plekken */}
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
-            const slot = slots[i];
+            const slot = sortedPallets[i];
             return (
               <div
                 key={i}
-                title={slot ? `${i + 1}. ${slot.product.naam} · ${slot.palletType.naam}` : `Plek ${i + 1} vrij`}
+                title={slot ? `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}` : `Plek ${i + 1} vrij`}
                 className={`flex aspect-square items-center justify-center rounded-md border text-[10px] font-semibold ${
-                  slot ? catSlot[slot.product.categorie] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
+                  slot ? catSlot[slot.products?.categorie] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
                 }`}
               >
                 {i + 1}
@@ -297,30 +450,37 @@ function Wizard({
           </span>
         </div>
 
-        {cart.length > 0 ? (
+        {lines.length > 0 ? (
           <>
             <ul className="mt-4 space-y-2">
-              {cart.map((l, i) => (
-                <li key={i} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+              {lines.map((l) => (
+                <li key={l.naam + l.type} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
                   <span className="flex items-center gap-2">
-                    <span className={`inline-block size-3 rounded ${catSlot[l.product.categorie]}`} />
-                    {l.aantal}× {l.product.naam} · {l.palletType.naam}
+                    <span className={`inline-block size-3 rounded ${catSlot[l.categorie]}`} />
+                    {l.ids.length}× {l.naam} · {l.type}
                   </span>
-                  <button onClick={() => setCart(cart.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
+                  <button onClick={() => removeOne(l.ids[l.ids.length - 1])} disabled={working} className="text-muted-foreground hover:text-destructive" title="Eén verwijderen">
                     <Trash2 className="size-4" />
                   </button>
                 </li>
               ))}
             </ul>
-            <Button className="mt-4 w-full h-12" onClick={onConfirm} disabled={busy}>
-              <Check className="size-5" /> {busy ? "Bezig…" : "Retour bevestigen"}
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button className="flex-1 h-12" variant="success" onClick={onSubmit} disabled={busy || working}>
+                <Check className="size-5" /> {busy ? "Bezig…" : "Retour indienen"}
+              </Button>
+              <Button className="h-12" variant="outline" onClick={onDiscard} disabled={busy || working}>
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
           </>
         ) : (
-          <p className="mt-4 text-center text-sm text-muted-foreground">Nog geen pallets toegevoegd</p>
+          <div className="mt-4 flex flex-col items-center gap-1 py-4 text-center text-sm text-muted-foreground">
+            <Package className="size-6 opacity-50" />
+            Nog geen pallets toegevoegd
+          </div>
         )}
       </div>
-
     </div>
   );
 }

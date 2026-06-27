@@ -132,3 +132,139 @@ export async function getSignedUrl(path: string): Promise<string | null> {
   const { data } = await supabase.storage.from("pallet-photos").createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
+
+// ---- Dashboard / draft (concept) retour helpers ----
+
+export const DEFAULT_CUSTOMER_NAME = "Swinnen";
+
+export type RetourWithPallets = {
+  id: string;
+  retournummer: string;
+  status: string;
+  created_at: string;
+  pallets: any[];
+};
+
+export async function fetchDefaultCustomer(): Promise<Customer> {
+  const { data, error } = await supabase
+    .from("customers")
+    .select("*")
+    .ilike("naam", `%${DEFAULT_CUSTOMER_NAME}%`)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Klant ${DEFAULT_CUSTOMER_NAME} niet gevonden`);
+  return data as Customer;
+}
+
+export async function fetchRetoursForCustomer(customerId: string): Promise<RetourWithPallets[]> {
+  const { data, error } = await supabase
+    .from("retours")
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as any[] as RetourWithPallets[];
+}
+
+export async function getOrCreateConceptRetour(customer: Customer): Promise<RetourWithPallets> {
+  const { data: existing } = await supabase
+    .from("retours")
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .eq("customer_id", customer.id)
+    .eq("status", "concept")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing as any as RetourWithPallets;
+
+  const jaar = new Date().getFullYear();
+  const retNum = Math.floor(Math.random() * 90000) + 10000;
+  const retournummer = `RET-${jaar}-${pad(retNum, 5)}`;
+  const { data: retour, error } = await supabase
+    .from("retours")
+    .insert({ retournummer, customer_id: customer.id, status: "concept" })
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .single();
+  if (error) throw error;
+  return retour as any as RetourWithPallets;
+}
+
+async function recomputePositions(retourId: string) {
+  const { data: pallets } = await supabase
+    .from("pallets")
+    .select("id")
+    .eq("retour_id", retourId)
+    .order("created_at", { ascending: true });
+  const list = pallets ?? [];
+  const totaal = list.length;
+  await Promise.all(
+    list.map((p: any, i: number) =>
+      supabase.from("pallets").update({ positie: i + 1, totaal }).eq("id", p.id),
+    ),
+  );
+}
+
+export async function addLineToRetour(retourId: string, customer: Customer, line: CartLine) {
+  const jaar = new Date().getFullYear();
+  const rows = Array.from({ length: line.aantal }, () => ({
+    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    retour_id: retourId,
+    product_id: line.product.id,
+    pallet_type_id: line.palletType.id,
+    soort: "vol" as const,
+    status: "aangemaakt" as const,
+    positie: 1,
+    totaal: 1,
+  }));
+  const { error } = await supabase.from("pallets").insert(rows);
+  if (error) throw error;
+  await recomputePositions(retourId);
+}
+
+export async function removePalletFromRetour(palletId: string, retourId: string) {
+  await supabase.from("audit_events").delete().eq("pallet_id", palletId);
+  await supabase.from("pallet_photos").delete().eq("pallet_id", palletId);
+  const { error } = await supabase.from("pallets").delete().eq("id", palletId);
+  if (error) throw error;
+  await recomputePositions(retourId);
+}
+
+export async function deleteConceptRetour(retourId: string) {
+  const { data: pallets } = await supabase.from("pallets").select("id").eq("retour_id", retourId);
+  const ids = (pallets ?? []).map((p: any) => p.id);
+  if (ids.length) {
+    await supabase.from("audit_events").delete().in("pallet_id", ids);
+    await supabase.from("pallet_photos").delete().in("pallet_id", ids);
+    await supabase.from("pallets").delete().in("id", ids);
+  }
+  await supabase.from("retours").delete().eq("id", retourId);
+}
+
+export async function submitRetour(retour: RetourWithPallets, customer: Customer) {
+  const { data: pallets, error } = await supabase
+    .from("pallets")
+    .select("*")
+    .eq("retour_id", retour.id)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  const list = (pallets ?? []) as Pallet[];
+  if (list.length === 0) throw new Error("Geen pallets in deze retour");
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  await Promise.all(
+    list.map((p) =>
+      supabase
+        .from("pallets")
+        .update({ status: "klaar_voor_retour", qr_payload: `${origin}/magazijn/pallet/${p.id}` })
+        .eq("id", p.id),
+    ),
+  );
+
+  await supabase.from("audit_events").insert(
+    list.map((p) => ({ pallet_id: p.id, type: "aangemaakt" as const, actor: customer.naam })),
+  );
+
+  await supabase.from("retours").update({ status: "ingediend" }).eq("id", retour.id);
+}
+

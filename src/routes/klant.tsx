@@ -7,7 +7,7 @@ import {
   Customer,
   Product,
   PalletType,
-  RetourWithPallets,
+  
   fetchDefaultCustomer,
   fetchPalletTypes,
   fetchProducts,

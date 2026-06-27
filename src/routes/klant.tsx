@@ -251,14 +251,27 @@ function Wizard({
   onDiscard: () => void;
   busy: boolean;
 }) {
+  const [soort, setSoort] = useState<"vol" | "mixed" | null>(null);
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
+  const [mixSelected, setMixSelected] = useState<Product[]>([]);
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
   const [aantal, setAantal] = useState(1);
   const [working, setWorking] = useState(false);
+
+  function resetWizard() {
+    setSoort(null);
+    setStep(1);
+    setProduct(null);
+    setMixSelected([]);
+    setPalletType(defaultType);
+    setAantal(1);
+    setSearch("");
+    setCatFilter(null);
+  }
 
   const grouped = useMemo(() => {
     const q = search.toLowerCase();

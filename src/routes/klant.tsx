@@ -583,12 +583,18 @@ function Wizard({
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
             const slot = sortedPallets[i];
+            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slot.products?.categorie) : null;
+            const slotTitle = slot
+              ? slot.soort === "mixed"
+                ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
+                : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
+              : `Plek ${i + 1} vrij`;
             return (
               <div
                 key={i}
-                title={slot ? `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}` : `Plek ${i + 1} vrij`}
+                title={slotTitle}
                 className={`flex aspect-square items-center justify-center rounded-md border text-[10px] font-semibold ${
-                  slot ? catSlot[slot.products?.categorie] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
+                  slot ? catSlot[slotCat] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
                 }`}
               >
                 {i + 1}

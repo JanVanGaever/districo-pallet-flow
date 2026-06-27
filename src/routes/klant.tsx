@@ -30,7 +30,7 @@ export const Route = createFileRoute("/klant")({
   component: KlantPage,
 });
 
-const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Frisdrank" };
+const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Limonade" };
 
 const MAX_PALLETS = 33;
 
@@ -252,6 +252,7 @@ function Wizard({
 }) {
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
@@ -263,8 +264,8 @@ function Wizard({
     return CATEGORIES.map((cat) => ({
       cat,
       items: products.filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q)),
-    })).filter((g) => g.items.length > 0);
-  }, [products, search]);
+    })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
+  }, [products, search, catFilter]);
 
   const totaal = pallets.length;
   const resterend = MAX_PALLETS - totaal;
@@ -339,6 +340,22 @@ function Wizard({
       {step === 1 && (
         <div className="mt-5">
           <Input placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => {
+              const active = catFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCatFilter(active ? null : cat)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
+                >
+                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
+                  {catLabel[cat]}
+                </button>
+              );
+            })}
+          </div>
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>

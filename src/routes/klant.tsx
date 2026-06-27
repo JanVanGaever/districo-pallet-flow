@@ -26,6 +26,14 @@ export const Route = createFileRoute("/klant")({
 
 const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Frisdrank" };
 
+const MAX_PALLETS = 33;
+
+const catSlot: Record<string, string> = {
+  bier: "bg-warning text-warning-foreground border-warning",
+  water: "bg-primary text-primary-foreground border-primary",
+  frisdrank: "bg-success text-success-foreground border-success",
+};
+
 function KlantPage() {
   const navigate = useNavigate();
   const { data: customers } = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers });

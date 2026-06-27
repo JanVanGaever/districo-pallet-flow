@@ -622,10 +622,15 @@ function Wizard({
           <>
             <ul className="mt-4 space-y-2">
               {lines.map((l) => (
-                <li key={l.naam + l.type} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                <li key={l.naam + l.type + (l.inhoud ?? "")} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
                   <span className="flex items-center gap-2">
-                    <span className={`inline-block size-3 rounded ${catSlot[l.categorie]}`} />
-                    {l.ids.length}× {l.naam} · {l.type}
+                    <span className={`inline-block size-3 shrink-0 rounded ${catSlot[l.categorie] ?? catSlot.mixed}`} />
+                    <span>
+                      {l.ids.length}× {l.naam} · {l.type}
+                      {l.soort === "mixed" && l.inhoud && (
+                        <span className="block text-xs text-muted-foreground">{l.inhoud}</span>
+                      )}
+                    </span>
                   </span>
                   <button onClick={() => removeOne(l.ids[l.ids.length - 1])} disabled={working} className="text-muted-foreground hover:text-destructive" title="Eén verwijderen">
                     <Trash2 className="size-4" />

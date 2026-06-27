@@ -14,6 +14,7 @@ import {
   fetchRetoursForCustomer,
   getOrCreateConceptRetour,
   addLineToRetour,
+  addMixedPalletToRetour,
   removePalletFromRetour,
   deleteConceptRetour,
   submitRetour,

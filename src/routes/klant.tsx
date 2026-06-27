@@ -264,8 +264,8 @@ function Wizard({
     return CATEGORIES.map((cat) => ({
       cat,
       items: products.filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q)),
-    })).filter((g) => g.items.length > 0);
-  }, [products, search]);
+    })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
+  }, [products, search, catFilter]);
 
   const totaal = pallets.length;
   const resterend = MAX_PALLETS - totaal;

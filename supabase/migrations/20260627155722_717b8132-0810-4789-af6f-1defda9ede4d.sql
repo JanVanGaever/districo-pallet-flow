@@ -1,0 +1,1 @@
+ALTER TABLE public.pallets ADD COLUMN IF NOT EXISTS inhoud text;

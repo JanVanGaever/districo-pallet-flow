@@ -124,6 +124,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          inhoud: string | null
           ontvangen_at: string | null
           pallet_type_id: string | null
           palletnummer: string
@@ -138,6 +139,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          inhoud?: string | null
           ontvangen_at?: string | null
           pallet_type_id?: string | null
           palletnummer: string
@@ -152,6 +154,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          inhoud?: string | null
           ontvangen_at?: string | null
           pallet_type_id?: string | null
           palletnummer?: string

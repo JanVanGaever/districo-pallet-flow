@@ -32,6 +32,7 @@ export type Pallet = {
   qr_payload: string | null;
   positie: number;
   totaal: number;
+  inhoud: string | null;
   ontvangen_at: string | null;
   created_at: string;
 };
@@ -216,6 +217,28 @@ export async function addLineToRetour(retourId: string, customer: Customer, line
     status: "aangemaakt" as const,
     positie: 1,
     totaal: 1,
+  }));
+  const { error } = await supabase.from("pallets").insert(rows);
+  if (error) throw error;
+  await recomputePositions(retourId);
+}
+
+export async function addMixedPalletToRetour(
+  retourId: string,
+  customer: Customer,
+  opts: { palletType: PalletType; aantal: number; inhoud: string },
+) {
+  const jaar = new Date().getFullYear();
+  const rows = Array.from({ length: opts.aantal }, () => ({
+    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    retour_id: retourId,
+    product_id: null,
+    pallet_type_id: opts.palletType.id,
+    soort: "mixed" as const,
+    status: "aangemaakt" as const,
+    positie: 1,
+    totaal: 1,
+    inhoud: opts.inhoud,
   }));
   const { error } = await supabase.from("pallets").insert(rows);
   if (error) throw error;

@@ -145,6 +145,9 @@ function Wizard({
   const totaal = cart.reduce((s, l) => s + l.aantal, 0);
   const resterend = MAX_PALLETS - totaal;
   const maxToevoegen = Math.max(0, resterend);
+  const slots = cart.flatMap((l) =>
+    Array.from({ length: l.aantal }, () => ({ product: l.product, palletType: l.palletType })),
+  );
 
   function addLine() {
     if (!product) return;

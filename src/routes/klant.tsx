@@ -290,12 +290,20 @@ function Wizard({
 
   // Group persisted pallets into lines for a compact list
   const lines = useMemo(() => {
-    const map = new Map<string, { naam: string; categorie: string; type: string; ids: string[] }>();
+    const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
-      const key = `${p.product_id}|${p.pallet_type_id}`;
+      const isMixed = p.soort === "mixed";
+      const key = isMixed ? `mixed|${p.inhoud}|${p.pallet_type_id}` : `${p.product_id}|${p.pallet_type_id}`;
       let g = map.get(key);
       if (!g) {
-        g = { naam: p.products?.naam ?? "?", categorie: p.products?.categorie ?? "", type: p.pallet_types?.naam ?? "", ids: [] };
+        g = {
+          naam: isMixed ? "Gemixte pallet" : p.products?.naam ?? "?",
+          categorie: isMixed ? "mixed" : p.products?.categorie ?? "",
+          type: p.pallet_types?.naam ?? "",
+          soort: p.soort ?? "vol",
+          inhoud: p.inhoud ?? null,
+          ids: [],
+        };
         map.set(key, g);
       }
       g.ids.push(p.id);

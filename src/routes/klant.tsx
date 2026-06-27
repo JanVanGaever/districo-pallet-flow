@@ -42,15 +42,6 @@ const catSlot: Record<string, string> = {
   frisdrank: "bg-success text-success-foreground border-success",
 };
 
-function StatusBadge({ status }: { status: PalletStatus }) {
-  const cls =
-    status === "ontvangen"
-      ? "bg-success/15 text-success"
-      : status === "klaar_voor_retour"
-        ? "bg-warning/20 text-warning-foreground"
-        : "bg-muted text-muted-foreground";
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>{STATUS_LABEL[status]}</span>;
-}
 
 function KlantPage() {
   const navigate = useNavigate();

@@ -252,6 +252,7 @@ function Wizard({
 }) {
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);

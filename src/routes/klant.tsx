@@ -142,8 +142,16 @@ function Wizard({
     })).filter((g) => g.items.length > 0);
   }, [products, search]);
 
+  const totaal = cart.reduce((s, l) => s + l.aantal, 0);
+  const resterend = MAX_PALLETS - totaal;
+  const maxToevoegen = Math.max(0, resterend);
+
   function addLine() {
     if (!product) return;
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
     setCart([...cart, { product, palletType, aantal }]);
     setStep(1);
     setProduct(null);
@@ -152,7 +160,6 @@ function Wizard({
     toast.success(`${aantal}× ${product.naam} toegevoegd`);
   }
 
-  const totaal = cart.reduce((s, l) => s + l.aantal, 0);
 
   return (
     <div className="mt-6 rounded-xl border bg-card p-5">

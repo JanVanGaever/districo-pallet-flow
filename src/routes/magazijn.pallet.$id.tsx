@@ -46,7 +46,7 @@ function PalletPage() {
     qc.invalidateQueries({ queryKey: ["pallet", id] });
   }
 
-  async function audit(type: string, detail?: string) {
+  async function audit(type: "aangemaakt" | "ontvangen" | "foto_toegevoegd" | "product_gewijzigd" | "pallettype_gewijzigd", detail?: string) {
     await supabase.from("audit_events").insert({ pallet_id: id, type, actor: "Magazijnier", detail });
   }
 

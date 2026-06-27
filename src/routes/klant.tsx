@@ -8,8 +8,6 @@ import {
   Product,
   PalletType,
   RetourWithPallets,
-  STATUS_LABEL,
-  PalletStatus,
   fetchDefaultCustomer,
   fetchPalletTypes,
   fetchProducts,

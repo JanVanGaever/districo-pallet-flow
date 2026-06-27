@@ -26,6 +26,14 @@ export const Route = createFileRoute("/klant")({
 
 const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Frisdrank" };
 
+const MAX_PALLETS = 33;
+
+const catSlot: Record<string, string> = {
+  bier: "bg-warning text-warning-foreground border-warning",
+  water: "bg-primary text-primary-foreground border-primary",
+  frisdrank: "bg-success text-success-foreground border-success",
+};
+
 function KlantPage() {
   const navigate = useNavigate();
   const { data: customers } = useQuery({ queryKey: ["customers"], queryFn: fetchCustomers });
@@ -134,8 +142,19 @@ function Wizard({
     })).filter((g) => g.items.length > 0);
   }, [products, search]);
 
+  const totaal = cart.reduce((s, l) => s + l.aantal, 0);
+  const resterend = MAX_PALLETS - totaal;
+  const maxToevoegen = Math.max(0, resterend);
+  const slots = cart.flatMap((l) =>
+    Array.from({ length: l.aantal }, () => ({ product: l.product, palletType: l.palletType })),
+  );
+
   function addLine() {
     if (!product) return;
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
     setCart([...cart, { product, palletType, aantal }]);
     setStep(1);
     setProduct(null);
@@ -144,7 +163,6 @@ function Wizard({
     toast.success(`${aantal}× ${product.naam} toegevoegd`);
   }
 
-  const totaal = cart.reduce((s, l) => s + l.aantal, 0);
 
   return (
     <div className="mt-6 rounded-xl border bg-card p-5">
@@ -213,33 +231,96 @@ function Wizard({
           <div className="mt-2 flex items-center gap-4">
             <Button variant="outline" size="icon" className="size-12" onClick={() => setAantal(Math.max(1, aantal - 1))}><Minus /></Button>
             <span className="w-12 text-center text-2xl font-bold">{aantal}</span>
-            <Button variant="outline" size="icon" className="size-12" onClick={() => setAantal(aantal + 1)}><Plus /></Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-12"
+              disabled={aantal >= maxToevoegen}
+              onClick={() => setAantal(Math.min(maxToevoegen, aantal + 1))}
+            >
+              <Plus />
+            </Button>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={addLine}><Plus className="size-4" /> Toevoegen aan retour</Button>
+            <Button onClick={addLine} disabled={maxToevoegen === 0}><Plus className="size-4" /> Toevoegen aan retour</Button>
           </div>
         </div>
       )}
 
-      {cart.length > 0 && (
-        <div className="mt-6 border-t pt-4">
-          <p className="text-sm font-semibold">Retour ({totaal} pallets)</p>
-          <ul className="mt-2 space-y-2">
-            {cart.map((l, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                <span>{l.aantal}× {l.product.naam} · {l.palletType.naam}</span>
-                <button onClick={() => setCart(cart.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="size-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <Button className="mt-4 w-full h-12" onClick={onConfirm} disabled={busy}>
-            <Check className="size-5" /> {busy ? "Bezig…" : "Retour bevestigen"}
-          </Button>
+
+      <div className="mt-6 border-t pt-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">Overzicht retour</p>
+          <p className="text-sm font-semibold tabular-nums">
+            <span className={totaal >= MAX_PALLETS ? "text-warning" : "text-foreground"}>{totaal}</span>
+            <span className="text-muted-foreground"> / {MAX_PALLETS} pallets</span>
+          </p>
         </div>
-      )}
+
+        {/* Voortgangsbalk */}
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${(totaal / MAX_PALLETS) * 100}%` }}
+          />
+        </div>
+
+        {/* Visueel rooster van 33 plekken */}
+        <div className="mt-4 grid grid-cols-11 gap-1.5">
+          {Array.from({ length: MAX_PALLETS }).map((_, i) => {
+            const slot = slots[i];
+            return (
+              <div
+                key={i}
+                title={slot ? `${i + 1}. ${slot.product.naam} · ${slot.palletType.naam}` : `Plek ${i + 1} vrij`}
+                className={`flex aspect-square items-center justify-center rounded-md border text-[10px] font-semibold ${
+                  slot ? catSlot[slot.product.categorie] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
+                }`}
+              >
+                {i + 1}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legenda */}
+        <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {CATEGORIES.map((cat) => (
+            <span key={cat} className="flex items-center gap-1.5">
+              <span className={`inline-block size-3 rounded ${catSlot[cat]}`} /> {catLabel[cat]}
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block size-3 rounded border border-dashed border-muted-foreground/40" /> Vrij
+          </span>
+        </div>
+
+        {cart.length > 0 ? (
+          <>
+            <ul className="mt-4 space-y-2">
+              {cart.map((l, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-2">
+                    <span className={`inline-block size-3 rounded ${catSlot[l.product.categorie]}`} />
+                    {l.aantal}× {l.product.naam} · {l.palletType.naam}
+                  </span>
+                  <button onClick={() => setCart(cart.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
+                    <Trash2 className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <Button className="mt-4 w-full h-12" onClick={onConfirm} disabled={busy}>
+              <Check className="size-5" /> {busy ? "Bezig…" : "Retour bevestigen"}
+            </Button>
+          </>
+        ) : (
+          <p className="mt-4 text-center text-sm text-muted-foreground">Nog geen pallets toegevoegd</p>
+        )}
+      </div>
+
     </div>
   );
 }

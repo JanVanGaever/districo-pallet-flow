@@ -32,6 +32,7 @@ export type Pallet = {
   qr_payload: string | null;
   positie: number;
   totaal: number;
+  inhoud: string | null;
   ontvangen_at: string | null;
   created_at: string;
 };

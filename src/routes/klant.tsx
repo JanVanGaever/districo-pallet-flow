@@ -312,17 +312,44 @@ function Wizard({
     try {
       await addLineToRetour(retourId, customer, { product, palletType, aantal });
       onChange();
-      setStep(1);
-      setProduct(null);
-      setPalletType(defaultType);
-      setAantal(1);
       toast.success(`${aantal}× ${product.naam} toegevoegd`);
+      resetWizard();
     } catch (e: any) {
       toast.error("Er ging iets mis: " + e.message);
     } finally {
       setWorking(false);
     }
   }
+
+  function toggleMix(p: Product) {
+    setMixSelected((prev) =>
+      prev.some((x) => x.id === p.id) ? prev.filter((x) => x.id !== p.id) : [...prev, p],
+    );
+  }
+
+  async function addMixed() {
+    if (mixSelected.length < 2) {
+      toast.error("Kies minstens 2 producten voor een gemixte pallet");
+      return;
+    }
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      const inhoud = mixSelected.map((p) => p.naam).join(", ");
+      await addMixedPalletToRetour(retourId, customer, { palletType, aantal, inhoud });
+      onChange();
+      toast.success(`${aantal}× gemixte pallet toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
 
   async function removeOne(id: string) {
     setWorking(true);

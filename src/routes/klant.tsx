@@ -39,6 +39,7 @@ const catSlot: Record<string, string> = {
   bier: "bg-warning text-warning-foreground border-warning",
   water: "bg-primary text-primary-foreground border-primary",
   frisdrank: "bg-success text-success-foreground border-success",
+  mixed: "bg-secondary text-secondary-foreground border-secondary",
 };
 
 

@@ -340,6 +340,22 @@ function Wizard({
       {step === 1 && (
         <div className="mt-5">
           <Input placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => {
+              const active = catFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCatFilter(active ? null : cat)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
+                >
+                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
+                  {catLabel[cat]}
+                </button>
+              );
+            })}
+          </div>
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>

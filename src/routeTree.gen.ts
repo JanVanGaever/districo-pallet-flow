@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as KlantRouteImport } from './routes/klant'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
 
 const KlantRoute = KlantRouteImport.update({
   id: '/klant',
@@ -22,31 +23,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KlantPrintRetourIdRoute = KlantPrintRetourIdRouteImport.update({
+  id: '/print/$retourId',
+  path: '/print/$retourId',
+  getParentRoute: () => KlantRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/klant': typeof KlantRoute
+  '/klant': typeof KlantRouteWithChildren
+  '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/klant': typeof KlantRoute
+  '/klant': typeof KlantRouteWithChildren
+  '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/klant': typeof KlantRoute
+  '/klant': typeof KlantRouteWithChildren
+  '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/klant'
+  fullPaths: '/' | '/klant' | '/klant/print/$retourId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/klant'
-  id: '__root__' | '/' | '/klant'
+  to: '/' | '/klant' | '/klant/print/$retourId'
+  id: '__root__' | '/' | '/klant' | '/klant/print/$retourId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  KlantRoute: typeof KlantRoute
+  KlantRoute: typeof KlantRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +74,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/klant/print/$retourId': {
+      id: '/klant/print/$retourId'
+      path: '/print/$retourId'
+      fullPath: '/klant/print/$retourId'
+      preLoaderRoute: typeof KlantPrintRetourIdRouteImport
+      parentRoute: typeof KlantRoute
+    }
   }
 }
 
+interface KlantRouteChildren {
+  KlantPrintRetourIdRoute: typeof KlantPrintRetourIdRoute
+}
+
+const KlantRouteChildren: KlantRouteChildren = {
+  KlantPrintRetourIdRoute: KlantPrintRetourIdRoute,
+}
+
+const KlantRouteWithChildren = KlantRoute._addFileChildren(KlantRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  KlantRoute: KlantRoute,
+  KlantRoute: KlantRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

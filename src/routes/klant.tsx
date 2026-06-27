@@ -30,7 +30,7 @@ export const Route = createFileRoute("/klant")({
   component: KlantPage,
 });
 
-const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Frisdrank" };
+const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Limonade" };
 
 const MAX_PALLETS = 33;
 

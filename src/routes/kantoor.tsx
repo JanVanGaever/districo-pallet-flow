@@ -39,11 +39,62 @@ function StatusBadge({ status }: { status: PalletStatus }) {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>{STATUS_LABEL[status]}</span>;
 }
 
+type RetourGroup = {
+  retourId: string;
+  retournummer: string;
+  klantNaam: string;
+  klantnummer: string;
+  pallets: any[];
+  totaal: number;
+  ontvangen: number;
+  fotos: number;
+  laatsteActiviteit: string;
+};
+
+function groupByRetour(rows: any[]): RetourGroup[] {
+  const map = new Map<string, RetourGroup>();
+  for (const r of rows) {
+    const id = r.retour_id;
+    let g = map.get(id);
+    if (!g) {
+      g = {
+        retourId: id,
+        retournummer: r.retours?.retournummer ?? "—",
+        klantNaam: r.retours?.customers?.naam ?? "Onbekend",
+        klantnummer: r.retours?.customers?.klantnummer ?? "",
+        pallets: [],
+        totaal: 0,
+        ontvangen: 0,
+        fotos: 0,
+        laatsteActiviteit: r.created_at,
+      };
+      map.set(id, g);
+    }
+    g.pallets.push(r);
+    g.totaal += 1;
+    if (r.status === "ontvangen") g.ontvangen += 1;
+    g.fotos += r.pallet_photos?.length ?? 0;
+    if (new Date(r.created_at) > new Date(g.laatsteActiviteit)) g.laatsteActiviteit = r.created_at;
+  }
+  return Array.from(map.values());
+}
+
+function RetourStatusBadge({ ontvangen, totaal }: { ontvangen: number; totaal: number }) {
+  const done = ontvangen === totaal;
+  const started = ontvangen > 0;
+  const cls = done
+    ? "bg-success/15 text-success"
+    : started
+      ? "bg-warning/20 text-warning-foreground"
+      : "bg-muted text-muted-foreground";
+  const label = done ? "Volledig ontvangen" : started ? "Deels ontvangen" : "In afwachting";
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>{label}</span>;
+}
+
 function KantoorPage() {
   const qc = useQueryClient();
   const { data: rows } = useQuery({ queryKey: ["kantoor-rows"], queryFn: fetchRows });
-  const [selected, setSelected] = useState<string | null>(null);
-  const [groupBy, setGroupBy] = useState<"none" | "klant">("none");
+  const [selectedRetour, setSelectedRetour] = useState<string | null>(null);
 
   useEffect(() => {
     const channel = supabase
@@ -73,6 +124,10 @@ function KantoorPage() {
     { label: "Nog te ontvangen", value: nogTeOntvangen },
   ];
 
+  const retours = groupByRetour(rows ?? []).sort(
+    (a, b) => new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime(),
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader title="Kantoor-dashboard" />
@@ -87,9 +142,7 @@ function KantoorPage() {
         </div>
 
         <div className="mt-6 flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Groeperen:</span>
-          <button onClick={() => setGroupBy("none")} className={`rounded-lg border px-3 py-1.5 text-sm ${groupBy === "none" ? "border-primary bg-accent/40" : ""}`}>Geen</button>
-          <button onClick={() => setGroupBy("klant")} className={`rounded-lg border px-3 py-1.5 text-sm ${groupBy === "klant" ? "border-primary bg-accent/40" : ""}`}>Per klant</button>
+          <span className="text-sm font-medium">Retours per klant</span>
           <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-2 rounded-full bg-success animate-pulse" /> Live
           </span>
@@ -99,53 +152,104 @@ function KantoorPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 font-medium">Palletnummer</th>
+                <th className="px-4 py-3 font-medium">Retournummer</th>
                 <th className="px-4 py-3 font-medium">Klant</th>
-                <th className="px-4 py-3 font-medium">Product</th>
-                <th className="px-4 py-3 font-medium">Pallettype</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Pallets</th>
+                <th className="px-4 py-3 font-medium">Ontvangen</th>
                 <th className="px-4 py-3 font-medium">Foto's</th>
-                <th className="px-4 py-3 font-medium">Ontvangst</th>
+                <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
-              {renderRows(rows ?? [], groupBy, setSelected)}
+              {retours.length === 0 ? (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Nog geen retours.</td></tr>
+              ) : (
+                retours.map((g) => (
+                  <tr key={g.retourId} className="cursor-pointer border-t hover:bg-accent/30" onClick={() => setSelectedRetour(g.retourId)}>
+                    <td className="px-4 py-3 font-medium">{g.retournummer}</td>
+                    <td className="px-4 py-3">
+                      <div>{g.klantNaam}</div>
+                      <div className="text-xs text-muted-foreground">Klantnr {g.klantnummer}</div>
+                    </td>
+                    <td className="px-4 py-3">{g.totaal}</td>
+                    <td className="px-4 py-3">{g.ontvangen} / {g.totaal}</td>
+                    <td className="px-4 py-3">{g.fotos}</td>
+                    <td className="px-4 py-3"><RetourStatusBadge ontvangen={g.ontvangen} totaal={g.totaal} /></td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </main>
 
-      {selected && <DetailPanel palletId={selected} onClose={() => setSelected(null)} />}
+      {selectedRetour && (
+        <RetourDetailPanel
+          group={retours.find((g) => g.retourId === selectedRetour)!}
+          onClose={() => setSelectedRetour(null)}
+        />
+      )}
     </div>
   );
 }
 
-function renderRows(rows: any[], groupBy: "none" | "klant", onSelect: (id: string) => void) {
-  const rowEl = (r: any) => (
-    <tr key={r.id} className="cursor-pointer border-t hover:bg-accent/30" onClick={() => onSelect(r.id)}>
-      <td className="px-4 py-3 font-medium">{r.palletnummer}</td>
-      <td className="px-4 py-3">{r.retours?.customers?.naam}</td>
-      <td className="px-4 py-3">{r.products?.naam}</td>
-      <td className="px-4 py-3">{r.pallet_types?.naam}</td>
-      <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-      <td className="px-4 py-3">{r.pallet_photos?.length ?? 0}</td>
-      <td className="px-4 py-3 text-muted-foreground">{r.ontvangen_at ? new Date(r.ontvangen_at).toLocaleString("nl-BE") : "—"}</td>
-    </tr>
+function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: () => void }) {
+  const [selectedPallet, setSelectedPallet] = useState<string | null>(null);
+
+  return (
+    <div className="fixed inset-0 z-20 flex justify-end bg-black/40" onClick={onClose}>
+      <aside className="h-full w-full max-w-lg overflow-y-auto bg-background shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-5 py-4">
+          <div>
+            <p className="font-semibold">{group.retournummer}</p>
+            <p className="text-xs text-muted-foreground">{group.klantNaam} · Klantnr {group.klantnummer}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-5" /></button>
+        </div>
+        <div className="space-y-4 p-5">
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="rounded-lg border p-3">
+              <p className="text-muted-foreground">Pallets</p>
+              <p className="font-medium">{group.totaal}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-muted-foreground">Ontvangen</p>
+              <p className="font-medium">{group.ontvangen} / {group.totaal}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-muted-foreground">Foto's</p>
+              <p className="font-medium">{group.fotos}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground">Pallets</h3>
+            <ul className="mt-2 space-y-2">
+              {group.pallets
+                .slice()
+                .sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0))
+                .map((p) => (
+                  <li key={p.id}>
+                    <button
+                      onClick={() => setSelectedPallet(p.id)}
+                      className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left hover:bg-accent/30"
+                    >
+                      <span className="font-medium">{p.palletnummer}</span>
+                      <span className="text-sm text-muted-foreground">{p.products?.naam}</span>
+                      <span className="ml-auto flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{p.pallet_photos?.length ?? 0} foto's</span>
+                        <StatusBadge status={p.status} />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </div>
+      </aside>
+      {selectedPallet && <DetailPanel palletId={selectedPallet} onClose={() => setSelectedPallet(null)} />}
+    </div>
   );
-
-  if (groupBy === "none") return rows.map(rowEl);
-
-  const groups: Record<string, any[]> = {};
-  for (const r of rows) {
-    const k = r.retours?.customers?.naam ?? "Onbekend";
-    (groups[k] ??= []).push(r);
-  }
-  return Object.entries(groups).flatMap(([naam, items]) => [
-    <tr key={"h-" + naam} className="border-t bg-muted/30">
-      <td colSpan={7} className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{naam} ({items.length})</td>
-    </tr>,
-    ...items.map(rowEl),
-  ]);
 }
 
 async function fetchDetail(palletId: string) {

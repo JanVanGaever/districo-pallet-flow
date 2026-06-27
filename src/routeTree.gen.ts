@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MagazijnRouteImport } from './routes/magazijn'
 import { Route as KlantRouteImport } from './routes/klant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
 
+const MagazijnRoute = MagazijnRouteImport.update({
+  id: '/magazijn',
+  path: '/magazijn',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KlantRoute = KlantRouteImport.update({
   id: '/klant',
   path: '/klant',
@@ -32,34 +38,45 @@ const KlantPrintRetourIdRoute = KlantPrintRetourIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/klant': typeof KlantRouteWithChildren
+  '/magazijn': typeof MagazijnRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/klant': typeof KlantRouteWithChildren
+  '/magazijn': typeof MagazijnRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/klant': typeof KlantRouteWithChildren
+  '/magazijn': typeof MagazijnRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/klant' | '/klant/print/$retourId'
+  fullPaths: '/' | '/klant' | '/magazijn' | '/klant/print/$retourId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/klant' | '/klant/print/$retourId'
-  id: '__root__' | '/' | '/klant' | '/klant/print/$retourId'
+  to: '/' | '/klant' | '/magazijn' | '/klant/print/$retourId'
+  id: '__root__' | '/' | '/klant' | '/magazijn' | '/klant/print/$retourId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KlantRoute: typeof KlantRouteWithChildren
+  MagazijnRoute: typeof MagazijnRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/magazijn': {
+      id: '/magazijn'
+      path: '/magazijn'
+      fullPath: '/magazijn'
+      preLoaderRoute: typeof MagazijnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/klant': {
       id: '/klant'
       path: '/klant'
@@ -97,6 +114,7 @@ const KlantRouteWithChildren = KlantRoute._addFileChildren(KlantRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KlantRoute: KlantRouteWithChildren,
+  MagazijnRoute: MagazijnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

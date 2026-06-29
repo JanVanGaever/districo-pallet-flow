@@ -613,12 +613,14 @@ function Wizard({
       )}
 
       {/* Stap 2: pallettype (beide soorten) */}
-      {step === 2 && (soort === "vol" ? !!product : mixSelected.length >= 2) && (
+      {step === 2 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground mb-3">
             {soort === "vol"
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
-              : <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>}
+              : soort === "mixed"
+                ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
+                : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
           </p>
           <p className="text-sm font-medium">Pallettype</p>
           <div className="mt-2 grid grid-cols-3 gap-2">

@@ -15,6 +15,7 @@ const tiles = [
   { to: "/klant", title: "Klantenportaal", desc: "Maak een nieuwe retour aan en print de QR-codes.", icon: Package },
   { to: "/magazijn", title: "Magazijnier-app", desc: "Scan pallets, bevestig en voeg foto's toe.", icon: Warehouse },
   { to: "/kantoor", title: "Kantoor-dashboard", desc: "Volg retours en ontvangsten realtime op.", icon: LayoutDashboard },
+  { to: "/producten", title: "Producten importeren", desc: "Upload de productenlijst (XLSX/ODS) naar de gedeelde database.", icon: FileSpreadsheet },
 ];
 
 function Home() {

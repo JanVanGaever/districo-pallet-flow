@@ -223,10 +223,16 @@ function KlantPage() {
                       <td className="px-5 py-3">{pl.length}</td>
                       <td className="px-5 py-3">{ontv} / {pl.length}</td>
                       <td className="px-5 py-3 text-right">
-                        <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                          <FileText className="size-4" /> QR-codes
-                        </Link>
+                        <div className="inline-flex items-center gap-4">
+                          <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                            <FileText className="size-4" /> Document
+                          </Link>
+                          <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                            <FileText className="size-4" /> QR-codes
+                          </Link>
+                        </div>
                       </td>
+
                     </tr>
                   );
                 })}

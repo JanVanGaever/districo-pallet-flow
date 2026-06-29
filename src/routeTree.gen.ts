@@ -16,6 +16,7 @@ import { Route as KantoorRouteImport } from './routes/kantoor'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MagazijnPalletIdRouteImport } from './routes/magazijn.pallet.$id'
 import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
+import { Route as KlantDocumentRetourIdRouteImport } from './routes/klant.document.$retourId'
 
 const ProductenRoute = ProductenRouteImport.update({
   id: '/producten',
@@ -52,6 +53,11 @@ const KlantPrintRetourIdRoute = KlantPrintRetourIdRouteImport.update({
   path: '/print/$retourId',
   getParentRoute: () => KlantRoute,
 } as any)
+const KlantDocumentRetourIdRoute = KlantDocumentRetourIdRouteImport.update({
+  id: '/document/$retourId',
+  path: '/document/$retourId',
+  getParentRoute: () => KlantRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
+  '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
+  '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
+  '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/klant'
     | '/magazijn'
     | '/producten'
+    | '/klant/document/$retourId'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/klant'
     | '/magazijn'
     | '/producten'
+    | '/klant/document/$retourId'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/klant'
     | '/magazijn'
     | '/producten'
+    | '/klant/document/$retourId'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   fileRoutesById: FileRoutesById
@@ -170,14 +182,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KlantPrintRetourIdRouteImport
       parentRoute: typeof KlantRoute
     }
+    '/klant/document/$retourId': {
+      id: '/klant/document/$retourId'
+      path: '/document/$retourId'
+      fullPath: '/klant/document/$retourId'
+      preLoaderRoute: typeof KlantDocumentRetourIdRouteImport
+      parentRoute: typeof KlantRoute
+    }
   }
 }
 
 interface KlantRouteChildren {
+  KlantDocumentRetourIdRoute: typeof KlantDocumentRetourIdRoute
   KlantPrintRetourIdRoute: typeof KlantPrintRetourIdRoute
 }
 
 const KlantRouteChildren: KlantRouteChildren = {
+  KlantDocumentRetourIdRoute: KlantDocumentRetourIdRoute,
   KlantPrintRetourIdRoute: KlantPrintRetourIdRoute,
 }
 

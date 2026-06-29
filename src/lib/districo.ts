@@ -17,6 +17,7 @@ export type Product = {
 export type PalletType = {
   id: string;
   naam: string;
+  standaard_bakken: number | null;
 };
 
 export type PalletStatus = "aangemaakt" | "klaar_voor_retour" | "ontvangen";
@@ -70,6 +71,17 @@ export async function fetchPalletTypes(): Promise<PalletType[]> {
   const { data, error } = await supabase.from("pallet_types").select("*").order("naam");
   if (error) throw error;
   return data as PalletType[];
+}
+
+// Pallettypes waarvoor een standaard aantal bakken per volle pallet zinvol is
+export const WEGWERP_NAAM = "Wegwerppallet";
+
+export async function updatePalletTypeBakken(id: string, standaard_bakken: number | null) {
+  const { error } = await supabase
+    .from("pallet_types")
+    .update({ standaard_bakken })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 function pad(n: number, len: number) {

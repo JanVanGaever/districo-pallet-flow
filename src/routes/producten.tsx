@@ -11,6 +11,8 @@ import {
   type ParsedProduct,
   type ImportResult,
 } from "@/lib/products-import";
+import { fetchPalletTypes, updatePalletTypeBakken, WEGWERP_NAAM, type PalletType } from "@/lib/districo";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/producten")({
   head: () => ({
@@ -99,7 +101,10 @@ function ProductenImport() {
           <div className="text-right">
             <p className="text-2xl font-bold">{dbCount ?? "—"}</p>
             <p className="text-xs text-muted-foreground">producten in database</p>
-          </div>
+        </div>
+
+        <PalletBakkenSettings />
+
         </div>
 
         <label
@@ -193,6 +198,80 @@ function ProductenImport() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function PalletBakkenSettings() {
+  const [types, setTypes] = useState<PalletType[] | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  async function load() {
+    const t = await fetchPalletTypes();
+    setTypes(t);
+    setValues(
+      Object.fromEntries(t.map((x) => [x.id, x.standaard_bakken != null ? String(x.standaard_bakken) : ""])),
+    );
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function save(t: PalletType) {
+    const raw = values[t.id]?.trim() ?? "";
+    const val = raw === "" ? null : Math.max(0, Math.round(Number(raw)));
+    if (raw !== "" && Number.isNaN(val)) {
+      toast.error("Geef een geldig getal in.");
+      return;
+    }
+    setSavingId(t.id);
+    try {
+      await updatePalletTypeBakken(t.id, val);
+      toast.success(`Standaard bakken voor ${t.naam} opgeslagen.`);
+      await load();
+    } catch (e: any) {
+      toast.error("Opslaan mislukt: " + (e?.message ?? "onbekende fout"));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  const editable = (types ?? []).filter((t) => t.naam !== WEGWERP_NAAM);
+
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <div className="flex items-center gap-3">
+        <div className="size-11 rounded-lg bg-primary/10 text-primary grid place-items-center">
+          <Database className="size-6" />
+        </div>
+        <div>
+          <p className="font-semibold">Standaard bakken per volle pallet</p>
+          <p className="text-sm text-muted-foreground">
+            Stel in hoeveel bakken er standaard op één volle pallet staan, per pallettype. Niet van toepassing op wegwerppallet.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {editable.map((t) => (
+          <div key={t.id} className="flex items-center gap-3 rounded-lg border p-3">
+            <span className="flex-1 font-medium">{t.naam}</span>
+            <Input
+              type="number"
+              min={0}
+              className="w-24"
+              placeholder="bv. 36"
+              value={values[t.id] ?? ""}
+              onChange={(e) => setValues((v) => ({ ...v, [t.id]: e.target.value }))}
+            />
+            <span className="text-xs text-muted-foreground">bakken</span>
+            <Button size="sm" onClick={() => save(t)} disabled={savingId === t.id}>
+              {savingId === t.id ? <Loader2 className="size-4 animate-spin" /> : "Opslaan"}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -107,16 +107,19 @@ export type Database = {
           created_at: string
           id: string
           naam: string
+          standaard_bakken: number | null
         }
         Insert: {
           created_at?: string
           id?: string
           naam: string
+          standaard_bakken?: number | null
         }
         Update: {
           created_at?: string
           id?: string
           naam?: string
+          standaard_bakken?: number | null
         }
         Relationships: []
       }

@@ -638,6 +638,9 @@ function Wizard({
                 className={`rounded-lg border p-3 text-sm transition-colors hover:border-primary ${palletType.id === t.id ? "border-primary bg-accent/40 font-medium" : ""}`}
               >
                 {t.naam}
+                {t.standaard_bakken != null && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{t.standaard_bakken} bakken/pallet</span>
+                )}
               </button>
             ))}
           </div>
@@ -673,6 +676,11 @@ function Wizard({
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
+          {soort === "vol" && palletType.standaard_bakken != null && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              ≈ {aantal * palletType.standaard_bakken} bakken ({palletType.standaard_bakken}/pallet × {aantal})
+            </p>
+          )}
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
             <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>

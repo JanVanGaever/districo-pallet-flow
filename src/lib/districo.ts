@@ -27,7 +27,7 @@ export type Pallet = {
   retour_id: string;
   product_id: string | null;
   pallet_type_id: string | null;
-  soort: "vol" | "mixed";
+  soort: "vol" | "mixed" | "lege_bakken" | "lege_flesjes";
   status: PalletStatus;
   qr_payload: string | null;
   positie: number;

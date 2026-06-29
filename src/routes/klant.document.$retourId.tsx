@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { STATUS_LABEL, PalletStatus } from "@/lib/districo";
+
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
 
@@ -19,11 +19,30 @@ async function fetchRetourData(retourId: string) {
     .single();
   const { data: pallets } = await supabase
     .from("pallets")
-    .select("*, products(naam), pallet_types(naam)")
+    .select(
+      "*, products(naam, leeggoedwaarde_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
+    )
     .eq("retour_id", retourId)
     .order("positie");
   return { retour, pallets: (pallets ?? []) as any[] };
 }
+
+function palletWaarde(p: any): number | null {
+  if (p.soort !== "vol" || !p.products) return null;
+  const waardePerBak = Number(p.products.leeggoedwaarde_per_bak ?? 0);
+  if (!waardePerBak) return null;
+  const typeNaam: string = p.pallet_types?.naam ?? "";
+  const isChep = /chep/i.test(typeNaam);
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    null;
+  if (!bakken) return null;
+  return waardePerBak * Number(bakken);
+}
+
+const eur = (n: number) =>
+  new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
 const soortLabel: Record<string, string> = {
   vol: "Volle pallet",
@@ -110,7 +129,7 @@ function DocumentPage() {
                 <th className="py-2 pr-2 font-semibold">Soort</th>
                 <th className="py-2 pr-2 font-semibold">Inhoud</th>
                 <th className="py-2 pr-2 font-semibold">Pallettype</th>
-                <th className="py-2 font-semibold">Status</th>
+                <th className="py-2 font-semibold text-right">Waarde</th>
               </tr>
             </thead>
             <tbody>
@@ -121,7 +140,7 @@ function DocumentPage() {
                   <td className="py-2 pr-2">{soortLabel[p.soort] ?? p.soort}</td>
                   <td className="py-2 pr-2">{p.products?.naam ?? p.inhoud ?? "—"}</td>
                   <td className="py-2 pr-2">{p.pallet_types?.naam ?? "—"}</td>
-                  <td className="py-2">{STATUS_LABEL[p.status as PalletStatus] ?? p.status}</td>
+                  <td className="py-2 text-right">{(() => { const w = palletWaarde(p); return w == null ? "—" : eur(w); })()}</td>
                 </tr>
               ))}
             </tbody>

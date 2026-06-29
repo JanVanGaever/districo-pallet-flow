@@ -368,8 +368,33 @@ function Wizard({
       toast.error("Er ging iets mis: " + e.message);
     } finally {
       setWorking(false);
+  }
+
+  async function addLeeg() {
+    if (!isLeeg) return;
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      await addLeeggoedPalletToRetour(retourId, customer, {
+        soort: soort as "lege_bakken" | "lege_flesjes",
+        product,
+        palletType,
+        aantal,
+      });
+      onChange();
+      toast.success(`${aantal}× ${soortLabel} toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
     }
   }
+
+
 
 
   async function removeOne(id: string) {

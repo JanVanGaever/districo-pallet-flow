@@ -83,6 +83,8 @@ export async function updatePalletTypeBakken(id: string, standaard_bakken: numbe
     .eq("id", id);
   if (error) throw error;
 }
+
+function pad(n: number, len: number) {
   return String(n).padStart(len, "0");
 }
 

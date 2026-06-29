@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, Database } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, Database, Settings2, Search } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";

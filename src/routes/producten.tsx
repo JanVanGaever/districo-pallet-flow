@@ -11,6 +11,8 @@ import {
   type ParsedProduct,
   type ImportResult,
 } from "@/lib/products-import";
+import { fetchPalletTypes, updatePalletTypeBakken, WEGWERP_NAAM, type PalletType } from "@/lib/districo";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/producten")({
   head: () => ({

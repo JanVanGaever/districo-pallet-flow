@@ -668,7 +668,7 @@ function Wizard({
           <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={soort === "vol" ? addLine : addMixed} disabled={maxToevoegen === 0 || working}>
+            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
               <Plus className="size-4" /> Toevoegen aan retour
             </Button>
           </div>

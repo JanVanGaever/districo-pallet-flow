@@ -496,15 +496,27 @@ function ProductConfigurator() {
                     />
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Button
-                      size="sm"
-                      variant={dirty ? "default" : "outline"}
-                      disabled={!dirty || savingId === p.id}
-                      onClick={() => save(p)}
-                    >
-                      {savingId === p.id ? <Loader2 className="size-4 animate-spin" /> : "Opslaan"}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant={dirty ? "default" : "outline"}
+                        disabled={!dirty || savingId === p.id}
+                        onClick={() => save(p)}
+                      >
+                        {savingId === p.id ? <Loader2 className="size-4 animate-spin" /> : "Opslaan"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Bakken per pallet doortrekken naar alle producten met hetzelfde verpakkingstype"
+                        disabled={!p.verpakkingstype || savingId === p.id}
+                        onClick={() => propagate(p)}
+                      >
+                        Doortrekken
+                      </Button>
+                    </div>
                   </td>
+
                 </tr>
               );
             })}

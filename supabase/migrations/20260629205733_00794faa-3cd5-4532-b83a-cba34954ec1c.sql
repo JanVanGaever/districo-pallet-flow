@@ -1,0 +1,1 @@
+ALTER TABLE public.pallet_types ADD COLUMN IF NOT EXISTS standaard_bakken integer;

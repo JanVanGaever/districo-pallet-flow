@@ -419,7 +419,7 @@ function Wizard({
       {soort && (
         <div className="mt-4 flex items-center gap-2 text-xs">
           <button onClick={resetWizard} className="rounded-full bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent/70">
-            {soort === "vol" ? "Volle pallet" : "Gemixte pallet"} ✕
+            {soortLabel} ✕
           </button>
           {[1, 2, 3].map((s) => (
             <span key={s} className={`rounded-full px-3 py-1 ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>

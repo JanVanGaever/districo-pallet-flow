@@ -512,6 +512,55 @@ function Wizard({
         </div>
       )}
 
+      {/* LEGE BAKKEN / FLESJES — stap 1: optioneel een merk kiezen */}
+      {isLeeg && step === 1 && (
+        <div className="mt-5">
+          <p className="text-sm font-medium">{soortLabel}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Kies optioneel een merk/product, of ga meteen verder zonder specifiek merk.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline" onClick={() => { setProduct(null); setStep(2); }}>
+              Zonder specifiek merk
+            </Button>
+          </div>
+          <Input className="mt-4" placeholder="Zoek merk/product…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => {
+              const active = catFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCatFilter(active ? null : cat)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
+                >
+                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
+                  {catLabel[cat]}
+                </button>
+              );
+            })}
+          </div>
+          {grouped.map((g) => (
+            <div key={g.cat} className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {g.items.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setProduct(p); setStep(2); }}
+                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                  >
+                    <p className="font-medium text-sm">{p.naam}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+
       {/* GEMIXTE PALLET — stap 1: producten kiezen */}
       {soort === "mixed" && step === 1 && (
         <div className="mt-5">

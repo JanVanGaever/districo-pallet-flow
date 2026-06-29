@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProductenRouteImport } from './routes/producten'
 import { Route as MagazijnRouteImport } from './routes/magazijn'
 import { Route as KlantRouteImport } from './routes/klant'
 import { Route as KantoorRouteImport } from './routes/kantoor'
@@ -16,6 +17,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MagazijnPalletIdRouteImport } from './routes/magazijn.pallet.$id'
 import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
 
+const ProductenRoute = ProductenRouteImport.update({
+  id: '/producten',
+  path: '/producten',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MagazijnRoute = MagazijnRouteImport.update({
   id: '/magazijn',
   path: '/magazijn',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/kantoor': typeof KantoorRoute
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
+  '/producten': typeof ProductenRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/kantoor': typeof KantoorRoute
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
+  '/producten': typeof ProductenRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/kantoor': typeof KantoorRoute
   '/klant': typeof KlantRouteWithChildren
   '/magazijn': typeof MagazijnRouteWithChildren
+  '/producten': typeof ProductenRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
   '/magazijn/pallet/$id': typeof MagazijnPalletIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/kantoor'
     | '/klant'
     | '/magazijn'
+    | '/producten'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/kantoor'
     | '/klant'
     | '/magazijn'
+    | '/producten'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/kantoor'
     | '/klant'
     | '/magazijn'
+    | '/producten'
     | '/klant/print/$retourId'
     | '/magazijn/pallet/$id'
   fileRoutesById: FileRoutesById
@@ -104,10 +116,18 @@ export interface RootRouteChildren {
   KantoorRoute: typeof KantoorRoute
   KlantRoute: typeof KlantRouteWithChildren
   MagazijnRoute: typeof MagazijnRouteWithChildren
+  ProductenRoute: typeof ProductenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/producten': {
+      id: '/producten'
+      path: '/producten'
+      fullPath: '/producten'
+      preLoaderRoute: typeof ProductenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/magazijn': {
       id: '/magazijn'
       path: '/magazijn'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   KantoorRoute: KantoorRoute,
   KlantRoute: KlantRouteWithChildren,
   MagazijnRoute: MagazijnRouteWithChildren,
+  ProductenRoute: ProductenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

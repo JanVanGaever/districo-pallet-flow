@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, Warehouse, LayoutDashboard } from "lucide-react";
+import { Package, Warehouse, LayoutDashboard, FileSpreadsheet } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({

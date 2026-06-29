@@ -57,12 +57,6 @@ function bakkenXFlesjes(p: any): string {
   return `${bakken} x ${flesjes}`;
 }
 
-const soortLabel: Record<string, string> = {
-  vol: "Volle pallet",
-  mixed: "Gemixte pallet",
-  lege_bakken: "Lege bakken",
-  lege_flesjes: "Lege flesjes",
-};
 
 function DocumentPage() {
   const { retourId } = Route.useParams();

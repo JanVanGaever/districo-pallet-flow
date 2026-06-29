@@ -642,10 +642,14 @@ function Wizard({
       )}
 
       {/* Stap 3: aantal + toevoegen (beide soorten) */}
-      {step === 3 && (soort === "vol" ? !!product : mixSelected.length >= 2) && (
+      {step === 3 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground">
-            {soort === "vol" ? `${product?.naam} · ${palletType.naam}` : `Gemixte pallet · ${palletType.naam}`}
+            {soort === "vol"
+              ? `${product?.naam} · ${palletType.naam}`
+              : soort === "mixed"
+                ? `Gemixte pallet · ${palletType.naam}`
+                : `${soortLabel}${product ? ` — ${product.naam}` : ""} · ${palletType.naam}`}
           </p>
           <p className="mt-4 text-sm font-medium">Aantal pallets</p>
           <div className="mt-2 flex items-center gap-4">

@@ -305,15 +305,21 @@ function Wizard({
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
       const isMixed = p.soort === "mixed";
-      const key = isMixed ? `mixed|${p.inhoud}|${p.pallet_type_id}` : `${p.product_id}|${p.pallet_type_id}`;
+      const isLeegP = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
+      const key = isMixed
+        ? `mixed|${p.inhoud}|${p.pallet_type_id}`
+        : isLeegP
+          ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
+          : `${p.product_id}|${p.pallet_type_id}`;
       let g = map.get(key);
       if (!g) {
+        const leegNaam = p.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
         g = {
-          naam: isMixed ? "Gemixte pallet" : p.products?.naam ?? "?",
-          categorie: isMixed ? "mixed" : p.products?.categorie ?? "",
+          naam: isMixed ? "Gemixte pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
+          categorie: isMixed ? "mixed" : isLeegP ? p.soort : p.products?.categorie ?? "",
           type: p.pallet_types?.naam ?? "",
           soort: p.soort ?? "vol",
-          inhoud: p.inhoud ?? null,
+          inhoud: isLeegP && p.products?.naam ? p.products.naam : p.inhoud ?? null,
           ids: [],
         };
         map.set(key, g);
@@ -322,6 +328,7 @@ function Wizard({
     }
     return Array.from(map.values());
   }, [sortedPallets]);
+
 
   async function addLine() {
     if (!product) return;

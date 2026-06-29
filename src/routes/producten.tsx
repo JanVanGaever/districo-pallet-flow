@@ -349,6 +349,38 @@ function ProductConfigurator() {
     }
   }
 
+  async function propagate(p: ProductConfig) {
+    const d = drafts[p.id];
+    if (!d) return;
+    if (!p.verpakkingstype) {
+      toast.error("Dit product heeft geen verpakkingstype om naar door te trekken.");
+      return;
+    }
+    if ([d.euro, d.chep].some((s) => s.trim() !== "" && Number.isNaN(Number(s)))) {
+      toast.error("Geef geldige getallen in.");
+      return;
+    }
+    setSavingId(p.id);
+    try {
+      // Eerst dit product zelf opslaan, dan doortrekken naar zelfde soort.
+      await updateProductConfig(p.id, {
+        aantal_per_bak: toNum(d.perBak),
+        bakken_per_europallet: toNum(d.euro),
+        bakken_per_cheppallet: toNum(d.chep),
+      });
+      const n = await applyBakkenToVerpakkingstype(p.verpakkingstype, {
+        bakken_per_europallet: toNum(d.euro),
+        bakken_per_cheppallet: toNum(d.chep),
+      });
+      toast.success(`Bakken per pallet doorgetrokken naar ${n} product(en) met verpakkingstype "${p.verpakkingstype}".`);
+      await load();
+    } catch (e: any) {
+      toast.error("Doortrekken mislukt: " + (e?.message ?? "onbekende fout"));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   const cats = ["all", "bier", "water", "frisdrank", "andere"];
   const q = search.trim().toLowerCase();
   const filtered = (products ?? []).filter((p) => {

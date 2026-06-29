@@ -288,7 +288,7 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
             <section className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg border p-3">
                 <p className="text-muted-foreground">Product</p>
-                <p className="font-medium">{data.pallet.products?.naam}</p>
+                <p className="font-medium">{data.pallet.products?.naam ?? data.pallet.inhoud ?? "—"}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-muted-foreground">Pallettype</p>

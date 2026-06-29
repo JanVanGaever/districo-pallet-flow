@@ -15,6 +15,7 @@ import {
   getOrCreateConceptRetour,
   addLineToRetour,
   addMixedPalletToRetour,
+  addLeeggoedPalletToRetour,
   removePalletFromRetour,
   deleteConceptRetour,
   submitRetour,

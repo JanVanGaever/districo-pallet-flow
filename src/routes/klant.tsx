@@ -753,7 +753,7 @@ function Wizard({
                     <span className={`inline-block size-3 shrink-0 rounded ${catSlot[l.categorie] ?? catSlot.mixed}`} />
                     <span>
                       {l.ids.length}× {l.naam} · {l.type}
-                      {l.soort === "mixed" && l.inhoud && (
+                      {(l.soort === "mixed" || l.soort === "lege_bakken" || l.soort === "lege_flesjes") && l.inhoud && (
                         <span className="block text-xs text-muted-foreground">{l.inhoud}</span>
                       )}
                     </span>

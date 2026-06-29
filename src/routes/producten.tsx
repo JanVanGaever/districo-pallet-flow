@@ -17,6 +17,7 @@ import {
   WEGWERP_NAAM,
   fetchProductConfigs,
   updateProductConfig,
+  applyBakkenToVerpakkingstype,
   type PalletType,
   type ProductConfig,
 } from "@/lib/districo";

@@ -17,6 +17,7 @@ export type Product = {
 export type PalletType = {
   id: string;
   naam: string;
+  standaard_bakken: number | null;
 };
 
 export type PalletStatus = "aangemaakt" | "klaar_voor_retour" | "ontvangen";

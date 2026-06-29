@@ -15,6 +15,7 @@ import {
   getOrCreateConceptRetour,
   addLineToRetour,
   addMixedPalletToRetour,
+  addLeeggoedPalletToRetour,
   removePalletFromRetour,
   deleteConceptRetour,
   submitRetour,
@@ -22,7 +23,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Beer, Box } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/klant")({
@@ -31,7 +32,14 @@ export const Route = createFileRoute("/klant")({
   component: KlantPage,
 });
 
-const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Limonade" };
+const catLabel: Record<string, string> = {
+  bier: "Bier",
+  water: "Water",
+  frisdrank: "Limonade",
+  mixed: "Gemixt",
+  lege_bakken: "Lege bakken",
+  lege_flesjes: "Lege flesjes",
+};
 
 const MAX_PALLETS = 33;
 
@@ -40,6 +48,8 @@ const catSlot: Record<string, string> = {
   water: "bg-primary text-primary-foreground border-primary",
   frisdrank: "bg-success text-success-foreground border-success",
   mixed: "bg-secondary text-secondary-foreground border-secondary",
+  lege_bakken: "bg-muted-foreground text-background border-muted-foreground",
+  lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
 };
 
 
@@ -252,7 +262,9 @@ function Wizard({
   onDiscard: () => void;
   busy: boolean;
 }) {
-  const [soort, setSoort] = useState<"vol" | "mixed" | null>(null);
+  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
+  const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
+  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -293,15 +305,21 @@ function Wizard({
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
       const isMixed = p.soort === "mixed";
-      const key = isMixed ? `mixed|${p.inhoud}|${p.pallet_type_id}` : `${p.product_id}|${p.pallet_type_id}`;
+      const isLeegP = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
+      const key = isMixed
+        ? `mixed|${p.inhoud}|${p.pallet_type_id}`
+        : isLeegP
+          ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
+          : `${p.product_id}|${p.pallet_type_id}`;
       let g = map.get(key);
       if (!g) {
+        const leegNaam = p.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
         g = {
-          naam: isMixed ? "Gemixte pallet" : p.products?.naam ?? "?",
-          categorie: isMixed ? "mixed" : p.products?.categorie ?? "",
+          naam: isMixed ? "Gemixte pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
+          categorie: isMixed ? "mixed" : isLeegP ? p.soort : p.products?.categorie ?? "",
           type: p.pallet_types?.naam ?? "",
           soort: p.soort ?? "vol",
-          inhoud: p.inhoud ?? null,
+          inhoud: isLeegP && p.products?.naam ? p.products.naam : p.inhoud ?? null,
           ids: [],
         };
         map.set(key, g);
@@ -310,6 +328,7 @@ function Wizard({
     }
     return Array.from(map.values());
   }, [sortedPallets]);
+
 
   async function addLine() {
     if (!product) return;
@@ -360,6 +379,33 @@ function Wizard({
   }
 
 
+  async function addLeeg() {
+    if (!isLeeg) return;
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      await addLeeggoedPalletToRetour(retourId, customer, {
+        soort: soort as "lege_bakken" | "lege_flesjes",
+        product,
+        palletType,
+        aantal,
+      });
+      onChange();
+      toast.success(`${aantal}× ${soortLabel} toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+
+
+
   async function removeOne(id: string) {
     setWorking(true);
     try {
@@ -382,7 +428,7 @@ function Wizard({
       {soort && (
         <div className="mt-4 flex items-center gap-2 text-xs">
           <button onClick={resetWizard} className="rounded-full bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent/70">
-            {soort === "vol" ? "Volle pallet" : "Gemixte pallet"} ✕
+            {soortLabel} ✕
           </button>
           {[1, 2, 3].map((s) => (
             <span key={s} className={`rounded-full px-3 py-1 ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
@@ -412,6 +458,22 @@ function Wizard({
               <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Layers className="size-5" /></span>
               <span className="font-semibold">Gemixte pallet</span>
               <span className="text-xs text-muted-foreground">Meerdere producten samen op één pallet.</span>
+            </button>
+            <button
+              onClick={() => { setSoort("lege_bakken"); setStep(1); setProduct(null); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Box className="size-5" /></span>
+              <span className="font-semibold">Lege bakken</span>
+              <span className="text-xs text-muted-foreground">Bakken zonder flesjes — optioneel per merk.</span>
+            </button>
+            <button
+              onClick={() => { setSoort("lege_flesjes"); setStep(1); setProduct(null); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Beer className="size-5" /></span>
+              <span className="font-semibold">Lege flesjes</span>
+              <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
             </button>
           </div>
         </div>
@@ -456,6 +518,55 @@ function Wizard({
           ))}
         </div>
       )}
+
+      {/* LEGE BAKKEN / FLESJES — stap 1: optioneel een merk kiezen */}
+      {isLeeg && step === 1 && (
+        <div className="mt-5">
+          <p className="text-sm font-medium">{soortLabel}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Kies optioneel een merk/product, of ga meteen verder zonder specifiek merk.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline" onClick={() => { setProduct(null); setStep(2); }}>
+              Zonder specifiek merk
+            </Button>
+          </div>
+          <Input className="mt-4" placeholder="Zoek merk/product…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => {
+              const active = catFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCatFilter(active ? null : cat)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
+                >
+                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
+                  {catLabel[cat]}
+                </button>
+              );
+            })}
+          </div>
+          {grouped.map((g) => (
+            <div key={g.cat} className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {g.items.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setProduct(p); setStep(2); }}
+                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                  >
+                    <p className="font-medium text-sm">{p.naam}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
 
       {/* GEMIXTE PALLET — stap 1: producten kiezen */}
       {soort === "mixed" && step === 1 && (
@@ -509,12 +620,14 @@ function Wizard({
       )}
 
       {/* Stap 2: pallettype (beide soorten) */}
-      {step === 2 && (soort === "vol" ? !!product : mixSelected.length >= 2) && (
+      {step === 2 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground mb-3">
             {soort === "vol"
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
-              : <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>}
+              : soort === "mixed"
+                ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
+                : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
           </p>
           <p className="text-sm font-medium">Pallettype</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -536,10 +649,14 @@ function Wizard({
       )}
 
       {/* Stap 3: aantal + toevoegen (beide soorten) */}
-      {step === 3 && (soort === "vol" ? !!product : mixSelected.length >= 2) && (
+      {step === 3 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground">
-            {soort === "vol" ? `${product?.naam} · ${palletType.naam}` : `Gemixte pallet · ${palletType.naam}`}
+            {soort === "vol"
+              ? `${product?.naam} · ${palletType.naam}`
+              : soort === "mixed"
+                ? `Gemixte pallet · ${palletType.naam}`
+                : `${soortLabel}${product ? ` — ${product.naam}` : ""} · ${palletType.naam}`}
           </p>
           <p className="mt-4 text-sm font-medium">Aantal pallets</p>
           <div className="mt-2 flex items-center gap-4">
@@ -558,7 +675,7 @@ function Wizard({
           <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={soort === "vol" ? addLine : addMixed} disabled={maxToevoegen === 0 || working}>
+            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
               <Plus className="size-4" /> Toevoegen aan retour
             </Button>
           </div>
@@ -583,11 +700,14 @@ function Wizard({
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
             const slot = sortedPallets[i];
-            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slot.products?.categorie) : null;
+            const slotLeeg = slot && (slot.soort === "lege_bakken" || slot.soort === "lege_flesjes");
+            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
             const slotTitle = slot
               ? slot.soort === "mixed"
                 ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
-                : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
+                : slotLeeg
+                  ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
+                  : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
               : `Plek ${i + 1} vrij`;
             return (
               <div
@@ -614,6 +734,12 @@ function Wizard({
             <span className={`inline-block size-3 rounded ${catSlot.mixed}`} /> Gemixt
           </span>
           <span className="flex items-center gap-1.5">
+            <span className={`inline-block size-3 rounded ${catSlot.lege_bakken}`} /> Lege bakken
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`inline-block size-3 rounded ${catSlot.lege_flesjes}`} /> Lege flesjes
+          </span>
+          <span className="flex items-center gap-1.5">
             <span className="inline-block size-3 rounded border border-dashed border-muted-foreground/40" /> Vrij
           </span>
         </div>
@@ -627,7 +753,7 @@ function Wizard({
                     <span className={`inline-block size-3 shrink-0 rounded ${catSlot[l.categorie] ?? catSlot.mixed}`} />
                     <span>
                       {l.ids.length}× {l.naam} · {l.type}
-                      {l.soort === "mixed" && l.inhoud && (
+                      {(l.soort === "mixed" || l.soort === "lege_bakken" || l.soort === "lege_flesjes") && l.inhoud && (
                         <span className="block text-xs text-muted-foreground">{l.inhoud}</span>
                       )}
                     </span>

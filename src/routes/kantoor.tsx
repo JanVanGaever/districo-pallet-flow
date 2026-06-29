@@ -235,7 +235,7 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
                       className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left hover:bg-accent/30"
                     >
                       <span className="font-medium">{p.palletnummer}</span>
-                      <span className="text-sm text-muted-foreground">{p.products?.naam}</span>
+                      <span className="text-sm text-muted-foreground">{p.products?.naam ?? p.inhoud ?? "—"}</span>
                       <span className="ml-auto flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{p.pallet_photos?.length ?? 0} foto's</span>
                         <StatusBadge status={p.status} />
@@ -288,7 +288,7 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
             <section className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg border p-3">
                 <p className="text-muted-foreground">Product</p>
-                <p className="font-medium">{data.pallet.products?.naam}</p>
+                <p className="font-medium">{data.pallet.products?.naam ?? data.pallet.inhoud ?? "—"}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-muted-foreground">Pallettype</p>

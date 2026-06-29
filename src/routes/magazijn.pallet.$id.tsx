@@ -141,7 +141,7 @@ function PalletPage() {
         {/* Product check */}
         <div className="rounded-xl border bg-card p-4">
           <p className="text-sm text-muted-foreground">Aangegeven product</p>
-          <p className="text-lg font-semibold">{p.products?.naam ?? "—"}</p>
+          <p className="text-lg font-semibold">{p.products?.naam ?? p.inhoud ?? "—"}</p>
           {!editProduct ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Button variant="success" onClick={() => toast.success("Product bevestigd")}><Check className="size-5" /> Ja</Button>

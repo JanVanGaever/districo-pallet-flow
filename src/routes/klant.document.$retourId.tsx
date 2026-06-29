@@ -139,7 +139,7 @@ function DocumentPage() {
               <tr className="border-b-2 border-black/20 text-left">
                 <th className="py-2 pr-2 font-semibold">#</th>
                 <th className="py-2 pr-2 font-semibold">Palletnummer</th>
-                <th className="py-2 pr-2 font-semibold">Soort</th>
+                <th className="py-2 pr-2 font-semibold">Bakken x flesjes</th>
                 <th className="py-2 pr-2 font-semibold">Inhoud</th>
                 <th className="py-2 pr-2 font-semibold">Pallettype</th>
                 <th className="py-2 font-semibold text-right">Waarde</th>

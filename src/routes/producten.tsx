@@ -355,8 +355,7 @@ function ProductConfigurator() {
     if (!q) return true;
     return (
       p.naam.toLowerCase().includes(q) ||
-      (p.code ?? "").toLowerCase().includes(q) ||
-      (p.merk ?? "").toLowerCase?.().includes(q)
+      (p.code ?? "").toLowerCase().includes(q)
     );
   });
 

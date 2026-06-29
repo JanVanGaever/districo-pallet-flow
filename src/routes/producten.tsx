@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, Database } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, Database, Settings2, Search } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,15 @@ import {
   type ParsedProduct,
   type ImportResult,
 } from "@/lib/products-import";
-import { fetchPalletTypes, updatePalletTypeBakken, WEGWERP_NAAM, type PalletType } from "@/lib/districo";
+import {
+  fetchPalletTypes,
+  updatePalletTypeBakken,
+  WEGWERP_NAAM,
+  fetchProductConfigs,
+  updateProductConfig,
+  type PalletType,
+  type ProductConfig,
+} from "@/lib/districo";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/producten")({
@@ -101,11 +109,12 @@ function ProductenImport() {
           <div className="text-right">
             <p className="text-2xl font-bold">{dbCount ?? "—"}</p>
             <p className="text-xs text-muted-foreground">producten in database</p>
+          </div>
         </div>
+
+        <ProductConfigurator />
 
         <PalletBakkenSettings />
-
-        </div>
 
         <label
           onDragOver={(e) => e.preventDefault()}
@@ -271,6 +280,203 @@ function PalletBakkenSettings() {
             </Button>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+type ConfigDraft = { perBak: string; euro: string; chep: string };
+
+function ProductConfigurator() {
+  const [products, setProducts] = useState<ProductConfig[] | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, ConfigDraft>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<string>("all");
+
+  function draftOf(p: ProductConfig): ConfigDraft {
+    return {
+      perBak: p.aantal_per_bak != null ? String(p.aantal_per_bak) : "",
+      euro: p.bakken_per_europallet != null ? String(p.bakken_per_europallet) : "",
+      chep: p.bakken_per_cheppallet != null ? String(p.bakken_per_cheppallet) : "",
+    };
+  }
+
+  async function load() {
+    const ps = await fetchProductConfigs();
+    setProducts(ps);
+    setDrafts(Object.fromEntries(ps.map((p) => [p.id, draftOf(p)])));
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  function toNum(s: string): number | null {
+    const t = s.trim();
+    if (t === "") return null;
+    const n = Math.round(Number(t));
+    return Number.isNaN(n) ? null : Math.max(0, n);
+  }
+
+  function isDirty(p: ProductConfig): boolean {
+    const d = drafts[p.id];
+    if (!d) return false;
+    const o = draftOf(p);
+    return d.perBak !== o.perBak || d.euro !== o.euro || d.chep !== o.chep;
+  }
+
+  async function save(p: ProductConfig) {
+    const d = drafts[p.id];
+    if (!d) return;
+    if ([d.perBak, d.euro, d.chep].some((s) => s.trim() !== "" && Number.isNaN(Number(s)))) {
+      toast.error("Geef geldige getallen in.");
+      return;
+    }
+    setSavingId(p.id);
+    try {
+      await updateProductConfig(p.id, {
+        aantal_per_bak: toNum(d.perBak),
+        bakken_per_europallet: toNum(d.euro),
+        bakken_per_cheppallet: toNum(d.chep),
+      });
+      toast.success(`${p.naam} opgeslagen.`);
+      await load();
+    } catch (e: any) {
+      toast.error("Opslaan mislukt: " + (e?.message ?? "onbekende fout"));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  const cats = ["all", "bier", "water", "frisdrank", "andere"];
+  const q = search.trim().toLowerCase();
+  const filtered = (products ?? []).filter((p) => {
+    if (catFilter !== "all" && p.categorie !== catFilter) return false;
+    if (!q) return true;
+    return (
+      p.naam.toLowerCase().includes(q) ||
+      (p.code ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="size-11 rounded-lg bg-primary/10 text-primary grid place-items-center">
+          <Settings2 className="size-6" />
+        </div>
+        <div>
+          <p className="font-semibold">Productconfigurator</p>
+          <p className="text-sm text-muted-foreground">
+            Stel per product in: flesjes per bak, bakken per europallet en bakken per cheppallet.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Zoek product of code…"
+            className="pl-9"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {cats.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCatFilter(c)}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${catFilter === c ? "border-primary bg-accent/40 font-medium" : "hover:border-primary"}`}
+            >
+              {c === "all" ? "Alle" : (catLabel[c] ?? c)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="overflow-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Product</th>
+              <th className="px-3 py-2">Categorie</th>
+              <th className="px-3 py-2 text-center">Flesjes/bak</th>
+              <th className="px-3 py-2 text-center">Bakken/europallet</th>
+              <th className="px-3 py-2 text-center">Bakken/cheppallet</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {products == null && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                  <Loader2 className="mx-auto size-5 animate-spin" />
+                </td>
+              </tr>
+            )}
+            {products != null && filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                  Geen producten gevonden.
+                </td>
+              </tr>
+            )}
+            {filtered.map((p) => {
+              const d = drafts[p.id] ?? { perBak: "", euro: "", chep: "" };
+              const dirty = isDirty(p);
+              return (
+                <tr key={p.id} className="border-t">
+                  <td className="px-3 py-2">
+                    <div className="font-medium">{p.naam}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.code ? `${p.code} · ` : ""}{p.verpakkingstype ?? "—"}{p.inhoud ? ` · ${p.inhoud}` : ""}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{catLabel[p.categorie] ?? p.categorie}</td>
+                  <td className="px-3 py-2 text-center">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="mx-auto w-20 text-center"
+                      value={d.perBak}
+                      onChange={(e) => setDrafts((v) => ({ ...v, [p.id]: { ...d, perBak: e.target.value } }))}
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="mx-auto w-20 text-center"
+                      value={d.euro}
+                      onChange={(e) => setDrafts((v) => ({ ...v, [p.id]: { ...d, euro: e.target.value } }))}
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="mx-auto w-20 text-center"
+                      value={d.chep}
+                      onChange={(e) => setDrafts((v) => ({ ...v, [p.id]: { ...d, chep: e.target.value } }))}
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button
+                      size="sm"
+                      variant={dirty ? "default" : "outline"}
+                      disabled={!dirty || savingId === p.id}
+                      onClick={() => save(p)}
+                    >
+                      {savingId === p.id ? <Loader2 className="size-4 animate-spin" /> : "Opslaan"}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

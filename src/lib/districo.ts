@@ -84,6 +84,40 @@ export async function updatePalletTypeBakken(id: string, standaard_bakken: numbe
   if (error) throw error;
 }
 
+// ---- Productconfigurator (flesjes per bak, bakken per europallet/cheppallet) ----
+export type ProductConfig = {
+  id: string;
+  code: string | null;
+  naam: string;
+  categorie: string;
+  verpakkingstype: string | null;
+  inhoud: string | null;
+  aantal_per_bak: number | null;
+  bakken_per_europallet: number | null;
+  bakken_per_cheppallet: number | null;
+};
+
+export async function fetchProductConfigs(): Promise<ProductConfig[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, code, naam, categorie, verpakkingstype, inhoud, aantal_per_bak, bakken_per_europallet, bakken_per_cheppallet")
+    .order("naam");
+  if (error) throw error;
+  return data as ProductConfig[];
+}
+
+export async function updateProductConfig(
+  id: string,
+  values: {
+    aantal_per_bak: number | null;
+    bakken_per_europallet: number | null;
+    bakken_per_cheppallet: number | null;
+  },
+) {
+  const { error } = await supabase.from("products").update(values).eq("id", id);
+  if (error) throw error;
+}
+
 function pad(n: number, len: number) {
   return String(n).padStart(len, "0");
 }

@@ -196,6 +196,8 @@ export type Database = {
       products: {
         Row: {
           aantal_per_bak: number | null
+          bakken_per_cheppallet: number | null
+          bakken_per_europallet: number | null
           categorie: string
           code: string | null
           created_at: string
@@ -212,6 +214,8 @@ export type Database = {
         }
         Insert: {
           aantal_per_bak?: number | null
+          bakken_per_cheppallet?: number | null
+          bakken_per_europallet?: number | null
           categorie: string
           code?: string | null
           created_at?: string
@@ -228,6 +232,8 @@ export type Database = {
         }
         Update: {
           aantal_per_bak?: number | null
+          bakken_per_cheppallet?: number | null
+          bakken_per_europallet?: number | null
           categorie?: string
           code?: string | null
           created_at?: string

@@ -150,7 +150,7 @@ function DocumentPage() {
                 <tr key={p.id} className="border-b border-black/10 align-top">
                   <td className="py-2 pr-2 text-black/60">{i + 1}</td>
                   <td className="py-2 pr-2 font-medium">{p.palletnummer}</td>
-                  <td className="py-2 pr-2">{soortLabel[p.soort] ?? p.soort}</td>
+                  <td className="py-2 pr-2">{bakkenXFlesjes(p)}</td>
                   <td className="py-2 pr-2">{p.products?.naam ?? p.inhoud ?? "—"}</td>
                   <td className="py-2 pr-2">{p.pallet_types?.naam ?? "—"}</td>
                   <td className="py-2 text-right">{(() => { const w = palletWaarde(p); return w == null ? "—" : eur(w); })()}</td>

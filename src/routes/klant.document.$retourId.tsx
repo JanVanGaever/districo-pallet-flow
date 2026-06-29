@@ -129,7 +129,7 @@ function DocumentPage() {
                 <th className="py-2 pr-2 font-semibold">Soort</th>
                 <th className="py-2 pr-2 font-semibold">Inhoud</th>
                 <th className="py-2 pr-2 font-semibold">Pallettype</th>
-                <th className="py-2 font-semibold">Status</th>
+                <th className="py-2 font-semibold text-right">Waarde</th>
               </tr>
             </thead>
             <tbody>

@@ -32,7 +32,14 @@ export const Route = createFileRoute("/klant")({
   component: KlantPage,
 });
 
-const catLabel: Record<string, string> = { bier: "Bier", water: "Water", frisdrank: "Limonade" };
+const catLabel: Record<string, string> = {
+  bier: "Bier",
+  water: "Water",
+  frisdrank: "Limonade",
+  mixed: "Gemixt",
+  lege_bakken: "Lege bakken",
+  lege_flesjes: "Lege flesjes",
+};
 
 const MAX_PALLETS = 33;
 
@@ -41,6 +48,8 @@ const catSlot: Record<string, string> = {
   water: "bg-primary text-primary-foreground border-primary",
   frisdrank: "bg-success text-success-foreground border-success",
   mixed: "bg-secondary text-secondary-foreground border-secondary",
+  lege_bakken: "bg-muted-foreground text-background border-muted-foreground",
+  lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
 };
 
 

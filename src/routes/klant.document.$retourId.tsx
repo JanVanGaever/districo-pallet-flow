@@ -19,11 +19,30 @@ async function fetchRetourData(retourId: string) {
     .single();
   const { data: pallets } = await supabase
     .from("pallets")
-    .select("*, products(naam), pallet_types(naam)")
+    .select(
+      "*, products(naam, leeggoedwaarde_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
+    )
     .eq("retour_id", retourId)
     .order("positie");
   return { retour, pallets: (pallets ?? []) as any[] };
 }
+
+function palletWaarde(p: any): number | null {
+  if (p.soort !== "vol" || !p.products) return null;
+  const waardePerBak = Number(p.products.leeggoedwaarde_per_bak ?? 0);
+  if (!waardePerBak) return null;
+  const typeNaam: string = p.pallet_types?.naam ?? "";
+  const isChep = /chep/i.test(typeNaam);
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    null;
+  if (!bakken) return null;
+  return waardePerBak * Number(bakken);
+}
+
+const eur = (n: number) =>
+  new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
 const soortLabel: Record<string, string> = {
   vol: "Volle pallet",

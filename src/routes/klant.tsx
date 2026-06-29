@@ -368,7 +368,9 @@ function Wizard({
       toast.error("Er ging iets mis: " + e.message);
     } finally {
       setWorking(false);
+    }
   }
+
 
   async function addLeeg() {
     if (!isLeeg) return;

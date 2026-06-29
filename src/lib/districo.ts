@@ -73,7 +73,16 @@ export async function fetchPalletTypes(): Promise<PalletType[]> {
   return data as PalletType[];
 }
 
-function pad(n: number, len: number) {
+// Pallettypes waarvoor een standaard aantal bakken per volle pallet zinvol is
+export const WEGWERP_NAAM = "Wegwerppallet";
+
+export async function updatePalletTypeBakken(id: string, standaard_bakken: number | null) {
+  const { error } = await supabase
+    .from("pallet_types")
+    .update({ standaard_bakken })
+    .eq("id", id);
+  if (error) throw error;
+}
   return String(n).padStart(len, "0");
 }
 

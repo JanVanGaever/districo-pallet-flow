@@ -638,6 +638,9 @@ function Wizard({
                 className={`rounded-lg border p-3 text-sm transition-colors hover:border-primary ${palletType.id === t.id ? "border-primary bg-accent/40 font-medium" : ""}`}
               >
                 {t.naam}
+                {t.standaard_bakken != null && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{t.standaard_bakken} bakken/pallet</span>
+                )}
               </button>
             ))}
           </div>

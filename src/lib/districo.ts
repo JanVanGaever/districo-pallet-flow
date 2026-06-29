@@ -245,6 +245,30 @@ export async function addMixedPalletToRetour(
   await recomputePositions(retourId);
 }
 
+export async function addLeeggoedPalletToRetour(
+  retourId: string,
+  customer: Customer,
+  opts: { soort: "lege_bakken" | "lege_flesjes"; product: Product | null; palletType: PalletType; aantal: number },
+) {
+  const jaar = new Date().getFullYear();
+  const label = opts.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
+  const inhoud = opts.product ? `${label} — ${opts.product.naam}` : label;
+  const rows = Array.from({ length: opts.aantal }, () => ({
+    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    retour_id: retourId,
+    product_id: opts.product?.id ?? null,
+    pallet_type_id: opts.palletType.id,
+    soort: opts.soort,
+    status: "aangemaakt" as const,
+    positie: 1,
+    totaal: 1,
+    inhoud,
+  }));
+  const { error } = await supabase.from("pallets").insert(rows);
+  if (error) throw error;
+  await recomputePositions(retourId);
+}
+
 export async function removePalletFromRetour(palletId: string, retourId: string) {
   await supabase.from("audit_events").delete().eq("pallet_id", palletId);
   await supabase.from("pallet_photos").delete().eq("pallet_id", palletId);

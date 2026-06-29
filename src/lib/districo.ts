@@ -118,6 +118,27 @@ export async function updateProductConfig(
   if (error) throw error;
 }
 
+// Trek het aantal bakken per pallet door naar alle producten van dezelfde
+// soort (zelfde verpakkingstype). Retourneert het aantal bijgewerkte producten.
+export async function applyBakkenToVerpakkingstype(
+  verpakkingstype: string,
+  values: {
+    bakken_per_europallet?: number | null;
+    bakken_per_cheppallet?: number | null;
+  },
+): Promise<number> {
+  const patch: Record<string, number | null> = {};
+  if ("bakken_per_europallet" in values) patch.bakken_per_europallet = values.bakken_per_europallet ?? null;
+  if ("bakken_per_cheppallet" in values) patch.bakken_per_cheppallet = values.bakken_per_cheppallet ?? null;
+  const { data, error } = await supabase
+    .from("products")
+    .update(patch)
+    .eq("verpakkingstype", verpakkingstype)
+    .select("id");
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 function pad(n: number, len: number) {
   return String(n).padStart(len, "0");
 }

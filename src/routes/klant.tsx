@@ -700,11 +700,14 @@ function Wizard({
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
             const slot = sortedPallets[i];
-            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slot.products?.categorie) : null;
+            const slotLeeg = slot && (slot.soort === "lege_bakken" || slot.soort === "lege_flesjes");
+            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
             const slotTitle = slot
               ? slot.soort === "mixed"
                 ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
-                : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
+                : slotLeeg
+                  ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
+                  : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
               : `Plek ${i + 1} vrij`;
             return (
               <div

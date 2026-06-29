@@ -140,7 +140,7 @@ function DocumentPage() {
                   <td className="py-2 pr-2">{soortLabel[p.soort] ?? p.soort}</td>
                   <td className="py-2 pr-2">{p.products?.naam ?? p.inhoud ?? "—"}</td>
                   <td className="py-2 pr-2">{p.pallet_types?.naam ?? "—"}</td>
-                  <td className="py-2">{STATUS_LABEL[p.status as PalletStatus] ?? p.status}</td>
+                  <td className="py-2 text-right">{(() => { const w = palletWaarde(p); return w == null ? "—" : eur(w); })()}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, Warehouse, LayoutDashboard } from "lucide-react";
+import { Package, Warehouse, LayoutDashboard, FileSpreadsheet } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,6 +15,7 @@ const tiles = [
   { to: "/klant", title: "Klantenportaal", desc: "Maak een nieuwe retour aan en print de QR-codes.", icon: Package },
   { to: "/magazijn", title: "Magazijnier-app", desc: "Scan pallets, bevestig en voeg foto's toe.", icon: Warehouse },
   { to: "/kantoor", title: "Kantoor-dashboard", desc: "Volg retours en ontvangsten realtime op.", icon: LayoutDashboard },
+  { to: "/producten", title: "Producten importeren", desc: "Upload de productenlijst (XLSX/ODS) naar de gedeelde database.", icon: FileSpreadsheet },
 ];
 
 function Home() {
@@ -32,7 +33,7 @@ function Home() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="text-3xl font-bold tracking-tight">Kies een view</h1>
         <p className="mt-2 text-muted-foreground">Drie rollen, één gedeelde database. Wat het magazijn opslaat verschijnt direct op kantoor.</p>
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {tiles.map((t) => (
             <Link key={t.to} to={t.to} className="group rounded-xl border bg-card p-6 transition-colors hover:border-primary hover:bg-accent/40">
               <div className="size-11 rounded-lg bg-primary/10 text-primary grid place-items-center">

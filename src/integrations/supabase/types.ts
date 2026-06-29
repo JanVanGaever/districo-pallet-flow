@@ -192,25 +192,52 @@ export type Database = {
       }
       products: {
         Row: {
+          aantal_per_bak: number | null
           categorie: string
+          code: string | null
           created_at: string
+          herbruikbaar: boolean
           id: string
+          inhoud: string | null
+          leeggoed_per_stuk: number
           leeggoedwaarde_per_bak: number
+          merk: string | null
           naam: string
+          subgroep: string | null
+          verkoopvorm: string | null
+          verpakkingstype: string | null
         }
         Insert: {
+          aantal_per_bak?: number | null
           categorie: string
+          code?: string | null
           created_at?: string
+          herbruikbaar?: boolean
           id?: string
+          inhoud?: string | null
+          leeggoed_per_stuk?: number
           leeggoedwaarde_per_bak?: number
+          merk?: string | null
           naam: string
+          subgroep?: string | null
+          verkoopvorm?: string | null
+          verpakkingstype?: string | null
         }
         Update: {
+          aantal_per_bak?: number | null
           categorie?: string
+          code?: string | null
           created_at?: string
+          herbruikbaar?: boolean
           id?: string
+          inhoud?: string | null
+          leeggoed_per_stuk?: number
           leeggoedwaarde_per_bak?: number
+          merk?: string | null
           naam?: string
+          subgroep?: string | null
+          verkoopvorm?: string | null
+          verpakkingstype?: string | null
         }
         Relationships: []
       }

@@ -127,7 +127,7 @@ export async function applyBakkenToVerpakkingstype(
     bakken_per_cheppallet?: number | null;
   },
 ): Promise<number> {
-  const patch: Record<string, number | null> = {};
+  const patch: { bakken_per_europallet?: number | null; bakken_per_cheppallet?: number | null } = {};
   if ("bakken_per_europallet" in values) patch.bakken_per_europallet = values.bakken_per_europallet ?? null;
   if ("bakken_per_cheppallet" in values) patch.bakken_per_cheppallet = values.bakken_per_cheppallet ?? null;
   const { data, error } = await supabase

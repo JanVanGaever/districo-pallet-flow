@@ -20,7 +20,7 @@ async function fetchRetourData(retourId: string) {
   const { data: pallets } = await supabase
     .from("pallets")
     .select(
-      "*, products(naam, leeggoedwaarde_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
+      "*, products(naam, leeggoedwaarde_per_bak, aantal_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
     )
     .eq("retour_id", retourId)
     .order("positie");

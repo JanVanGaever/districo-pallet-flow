@@ -20,7 +20,7 @@ async function fetchRetourData(retourId: string) {
   const { data: pallets } = await supabase
     .from("pallets")
     .select(
-      "*, products(naam, leeggoedwaarde_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
+      "*, products(naam, leeggoedwaarde_per_bak, aantal_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken)",
     )
     .eq("retour_id", retourId)
     .order("positie");
@@ -44,12 +44,19 @@ function palletWaarde(p: any): number | null {
 const eur = (n: number) =>
   new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
-const soortLabel: Record<string, string> = {
-  vol: "Volle pallet",
-  mixed: "Gemixte pallet",
-  lege_bakken: "Lege bakken",
-  lege_flesjes: "Lege flesjes",
-};
+function bakkenXFlesjes(p: any): string {
+  if (p.soort !== "vol" || !p.products) return "—";
+  const typeNaam: string = p.pallet_types?.naam ?? "";
+  const isChep = /chep/i.test(typeNaam);
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    null;
+  const flesjes = p.products.aantal_per_bak ?? null;
+  if (!bakken || !flesjes) return "—";
+  return `${bakken} x ${flesjes}`;
+}
+
 
 function DocumentPage() {
   const { retourId } = Route.useParams();
@@ -126,7 +133,7 @@ function DocumentPage() {
               <tr className="border-b-2 border-black/20 text-left">
                 <th className="py-2 pr-2 font-semibold">#</th>
                 <th className="py-2 pr-2 font-semibold">Palletnummer</th>
-                <th className="py-2 pr-2 font-semibold">Soort</th>
+                <th className="py-2 pr-2 font-semibold">Bakken x flesjes</th>
                 <th className="py-2 pr-2 font-semibold">Inhoud</th>
                 <th className="py-2 pr-2 font-semibold">Pallettype</th>
                 <th className="py-2 font-semibold text-right">Waarde</th>
@@ -137,7 +144,7 @@ function DocumentPage() {
                 <tr key={p.id} className="border-b border-black/10 align-top">
                   <td className="py-2 pr-2 text-black/60">{i + 1}</td>
                   <td className="py-2 pr-2 font-medium">{p.palletnummer}</td>
-                  <td className="py-2 pr-2">{soortLabel[p.soort] ?? p.soort}</td>
+                  <td className="py-2 pr-2">{bakkenXFlesjes(p)}</td>
                   <td className="py-2 pr-2">{p.products?.naam ?? p.inhoud ?? "—"}</td>
                   <td className="py-2 pr-2">{p.pallet_types?.naam ?? "—"}</td>
                   <td className="py-2 text-right">{(() => { const w = palletWaarde(p); return w == null ? "—" : eur(w); })()}</td>

@@ -44,6 +44,19 @@ function palletWaarde(p: any): number | null {
 const eur = (n: number) =>
   new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
+function bakkenXFlesjes(p: any): string {
+  if (p.soort !== "vol" || !p.products) return "—";
+  const typeNaam: string = p.pallet_types?.naam ?? "";
+  const isChep = /chep/i.test(typeNaam);
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    null;
+  const flesjes = p.products.aantal_per_bak ?? null;
+  if (!bakken || !flesjes) return "—";
+  return `${bakken} x ${flesjes}`;
+}
+
 const soortLabel: Record<string, string> = {
   vol: "Volle pallet",
   mixed: "Gemixte pallet",

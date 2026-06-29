@@ -101,7 +101,10 @@ function ProductenImport() {
           <div className="text-right">
             <p className="text-2xl font-bold">{dbCount ?? "—"}</p>
             <p className="text-xs text-muted-foreground">producten in database</p>
-          </div>
+        </div>
+
+        <PalletBakkenSettings />
+
         </div>
 
         <label

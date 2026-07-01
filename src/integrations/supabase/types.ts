@@ -73,6 +73,27 @@ export type Database = {
         }
         Relationships: []
       }
+      leveranciers: {
+        Row: {
+          created_at: string
+          id: string
+          naam: string
+          plaats: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          naam: string
+          plaats?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          naam?: string
+          plaats?: string | null
+        }
+        Relationships: []
+      }
       pallet_photos: {
         Row: {
           created_at: string
@@ -224,6 +245,7 @@ export type Database = {
           inhoud: string | null
           leeggoed_per_stuk: number
           leeggoedwaarde_per_bak: number
+          leverancier: string | null
           merk: string | null
           naam: string
           subgroep: string | null
@@ -242,6 +264,7 @@ export type Database = {
           inhoud?: string | null
           leeggoed_per_stuk?: number
           leeggoedwaarde_per_bak?: number
+          leverancier?: string | null
           merk?: string | null
           naam: string
           subgroep?: string | null
@@ -260,6 +283,7 @@ export type Database = {
           inhoud?: string | null
           leeggoed_per_stuk?: number
           leeggoedwaarde_per_bak?: number
+          leverancier?: string | null
           merk?: string | null
           naam?: string
           subgroep?: string | null
@@ -271,24 +295,30 @@ export type Database = {
       retours: {
         Row: {
           created_at: string
-          customer_id: string
+          customer_id: string | null
           id: string
+          leverancier_id: string | null
           retournummer: string
           status: string
+          type: string
         }
         Insert: {
           created_at?: string
-          customer_id: string
+          customer_id?: string | null
           id?: string
+          leverancier_id?: string | null
           retournummer: string
           status?: string
+          type?: string
         }
         Update: {
           created_at?: string
-          customer_id?: string
+          customer_id?: string | null
           id?: string
+          leverancier_id?: string | null
           retournummer?: string
           status?: string
+          type?: string
         }
         Relationships: [
           {
@@ -296,6 +326,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retours_leverancier_id_fkey"
+            columns: ["leverancier_id"]
+            isOneToOne: false
+            referencedRelation: "leveranciers"
             referencedColumns: ["id"]
           },
         ]

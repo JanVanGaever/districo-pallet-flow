@@ -27,7 +27,13 @@ export const Route = createFileRoute("/magazijn")({
 function MagazijnPage() {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const { data: demoPallets, isLoading: demoLoading } = useQuery({
+    queryKey: ["scanbarePallets"],
+    queryFn: fetchScanbarePallets,
+    enabled: showDemo,
+  });
 
   useEffect(() => {
     if (!scanning) return;

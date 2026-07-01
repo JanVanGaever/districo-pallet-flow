@@ -193,8 +193,26 @@ function KantoorPage() {
   );
 }
 
+const euro = (n: number) => new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
+
+type VerschilRow = { pallet: any; opgegeven: number; geteld: number; verschil: number; impact: number };
+
+function buildVerschilrapport(pallets: any[]) {
+  const rows: VerschilRow[] = [];
+  for (const p of pallets) {
+    if (p.opgegeven_aantal == null || p.gecontroleerd_aantal == null) continue;
+    const verschil = p.gecontroleerd_aantal - p.opgegeven_aantal;
+    if (verschil === 0) continue;
+    const waarde = Number(p.products?.leeggoedwaarde_per_bak ?? 0);
+    rows.push({ pallet: p, opgegeven: p.opgegeven_aantal, geteld: p.gecontroleerd_aantal, verschil, impact: verschil * waarde });
+  }
+  const totaalImpact = rows.reduce((s, r) => s + r.impact, 0);
+  return { rows, totaalImpact };
+}
+
 function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: () => void }) {
   const [selectedPallet, setSelectedPallet] = useState<string | null>(null);
+  const { rows: verschilRows, totaalImpact } = buildVerschilrapport(group.pallets);
 
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-black/40" onClick={onClose}>
@@ -221,6 +239,49 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
               <p className="font-medium">{group.fotos}</p>
             </div>
           </div>
+
+          {/* Verschilrapport: opgave vs. geteld bij inname, met euro-impact */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Verschilrapport</h3>
+              {verschilRows.length > 0 && (
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${totaalImpact < 0 ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
+                  Euro-impact {totaalImpact > 0 ? "+" : ""}{euro(totaalImpact)}
+                </span>
+              )}
+            </div>
+            {verschilRows.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">Geen verschillen tussen opgave en telling.</p>
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="pb-1 font-medium">Pallet</th>
+                    <th className="pb-1 text-right font-medium">Opgave</th>
+                    <th className="pb-1 text-right font-medium">Geteld</th>
+                    <th className="pb-1 text-right font-medium">Verschil</th>
+                    <th className="pb-1 text-right font-medium">Impact</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {verschilRows.map((r) => (
+                    <tr key={r.pallet.id} className="border-t">
+                      <td className="py-1.5">{r.pallet.palletnummer}</td>
+                      <td className="py-1.5 text-right tabular-nums">{r.opgegeven}</td>
+                      <td className="py-1.5 text-right tabular-nums">{r.geteld}</td>
+                      <td className={`py-1.5 text-right font-medium tabular-nums ${r.verschil < 0 ? "text-destructive" : "text-success"}`}>
+                        {r.verschil > 0 ? "+" : ""}{r.verschil}
+                      </td>
+                      <td className={`py-1.5 text-right tabular-nums ${r.impact < 0 ? "text-destructive" : "text-success"}`}>
+                        {r.impact > 0 ? "+" : ""}{euro(r.impact)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
 
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground">Pallets</h3>

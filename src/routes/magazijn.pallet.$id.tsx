@@ -245,7 +245,71 @@ function PalletPage() {
             <Camera className="size-5" /> {uploading ? "Uploaden…" : "Foto's toevoegen"}
           </Button>
         </div>
+
+        {/* Telling & gewicht — bewijs op innamemoment */}
+        <div className="rounded-xl border bg-card p-4 space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2"><Scale className="size-4 text-primary" /> Inname-verificatie</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Opgegeven bakken</label>
+              <div className="mt-1 h-11 rounded-lg border bg-muted/40 grid place-items-center text-lg font-semibold">
+                {opgegevenBakken ?? "—"}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Geteld bij inname</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={geteld}
+                onChange={(e) => setGeteld(e.target.value)}
+                className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-lg font-semibold"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {opgegevenBakken != null && geteld.trim() !== "" && Number(geteld) !== opgegevenBakken && (
+            <div className="flex items-center gap-2 rounded-lg bg-warning/15 px-3 py-2 text-sm text-warning-foreground">
+              <AlertTriangle className="size-4 shrink-0 text-warning" />
+              Verschil van {Number(geteld) - opgegevenBakken > 0 ? "+" : ""}
+              {Number(geteld) - opgegevenBakken} bak(ken) t.o.v. opgave.
+            </div>
+          )}
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Gewogen gewicht (kg) — optioneel</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={gewogen}
+              onChange={(e) => setGewogen(e.target.value)}
+              className="mt-1 h-11 w-full rounded-lg border bg-background px-3"
+              placeholder="bv. 240"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Aangenomen door</label>
+            <input
+              type="text"
+              value={ontvangenDoor}
+              onChange={(e) => setOntvangenDoor(e.target.value)}
+              className="mt-1 h-11 w-full rounded-lg border bg-background px-3"
+              placeholder="Naam magazijnier"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Handtekening klant</label>
+            <div className="mt-1">
+              <SignaturePad value={handtekening} onChange={setHandtekening} />
+            </div>
+          </div>
+        </div>
       </main>
+
 
       <div className="fixed inset-x-0 bottom-0 border-t bg-card/95 backdrop-blur p-4">
         <div className="mx-auto max-w-md">

@@ -659,7 +659,7 @@ function Wizard({
             {palletTypes.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setPalletType(t)}
+                onClick={() => { setPalletType(t); setStep(3); }}
                 className={`rounded-lg border p-3 text-sm transition-colors hover:border-primary ${palletType.id === t.id ? "border-primary bg-accent/40 font-medium" : ""}`}
               >
                 {t.naam}
@@ -671,7 +671,6 @@ function Wizard({
           </div>
           <div className="mt-4 flex gap-2">
             <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={() => setStep(3)}>Verder</Button>
           </div>
         </div>
       )}

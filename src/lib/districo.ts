@@ -288,10 +288,10 @@ async function recomputePositions(retourId: string) {
   );
 }
 
-export async function addLineToRetour(retourId: string, customer: Customer, line: CartLine) {
+export async function addLineToRetour(retourId: string, code: string, line: CartLine) {
   const jaar = new Date().getFullYear();
   const rows = Array.from({ length: line.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: line.product.id,
     pallet_type_id: line.palletType.id,
@@ -307,12 +307,12 @@ export async function addLineToRetour(retourId: string, customer: Customer, line
 
 export async function addMixedPalletToRetour(
   retourId: string,
-  customer: Customer,
+  code: string,
   opts: { palletType: PalletType; aantal: number; inhoud: string },
 ) {
   const jaar = new Date().getFullYear();
   const rows = Array.from({ length: opts.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: null,
     pallet_type_id: opts.palletType.id,
@@ -329,14 +329,14 @@ export async function addMixedPalletToRetour(
 
 export async function addLeeggoedPalletToRetour(
   retourId: string,
-  customer: Customer,
+  code: string,
   opts: { soort: "lege_bakken" | "lege_flesjes"; product: Product | null; palletType: PalletType; aantal: number },
 ) {
   const jaar = new Date().getFullYear();
   const label = opts.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
   const inhoud = opts.product ? `${label} — ${opts.product.naam}` : label;
   const rows = Array.from({ length: opts.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: opts.product?.id ?? null,
     pallet_type_id: opts.palletType.id,
@@ -370,7 +370,7 @@ export async function deleteConceptRetour(retourId: string) {
   await supabase.from("retours").delete().eq("id", retourId);
 }
 
-export async function submitRetour(retour: RetourWithPallets, customer: Customer) {
+export async function submitRetour(retour: RetourWithPallets, actorNaam: string) {
   const { data: pallets, error } = await supabase
     .from("pallets")
     .select("*")
@@ -391,7 +391,7 @@ export async function submitRetour(retour: RetourWithPallets, customer: Customer
   );
 
   await supabase.from("audit_events").insert(
-    list.map((p) => ({ pallet_id: p.id, type: "aangemaakt" as const, actor: customer.naam })),
+    list.map((p) => ({ pallet_id: p.id, type: "aangemaakt" as const, actor: actorNaam })),
   );
 
   await supabase.from("retours").update({ status: "ingediend" }).eq("id", retour.id);

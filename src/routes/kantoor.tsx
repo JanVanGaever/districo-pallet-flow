@@ -15,7 +15,7 @@ export const Route = createFileRoute("/kantoor")({
 async function fetchRows() {
   const { data, error } = await supabase
     .from("pallets")
-    .select("*, products(naam), pallet_types(naam), retours(retournummer, status, customers(naam, klantnummer)), pallet_photos(id)")
+    .select("*, products(naam, leeggoedwaarde_per_bak), pallet_types(naam), retours(retournummer, status, customers(naam, klantnummer)), pallet_photos(id)")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).filter((r: any) => r.retours?.status !== "concept") as any[];

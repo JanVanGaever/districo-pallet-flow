@@ -87,6 +87,45 @@ function MagazijnPage() {
             >
               <BookOpen className="size-4" /> Waardecatalogus openen
             </Link>
+
+            {/* Demo-bypass: pallet openen zonder camera/QR */}
+            <div className="mt-10 rounded-2xl border border-dashed bg-muted/30 p-4 text-left">
+              <button
+                onClick={() => setShowDemo((v) => !v)}
+                className="flex w-full items-center gap-2 text-sm font-medium"
+              >
+                <FlaskConical className="size-4 text-primary" />
+                Demo: pallet openen zonder scannen
+                <ChevronRight className={`ml-auto size-4 transition-transform ${showDemo ? "rotate-90" : ""}`} />
+              </button>
+              {showDemo && (
+                <div className="mt-3">
+                  {demoLoading ? (
+                    <p className="text-sm text-muted-foreground">Laden…</p>
+                  ) : (demoPallets?.length ?? 0) === 0 ? (
+                    <p className="text-sm text-muted-foreground">Geen ingediende pallets gevonden.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {demoPallets!.map((p: any) => (
+                        <li key={p.id}>
+                          <button
+                            onClick={() => navigate({ to: "/magazijn/pallet/$id", params: { id: p.id } })}
+                            className="flex w-full items-center gap-2 rounded-lg border bg-card px-3 py-2 text-left text-sm hover:border-primary"
+                          >
+                            <span className="font-medium">{p.palletnummer}</span>
+                            <span className="truncate text-muted-foreground">
+                              {p.products?.naam ?? p.inhoud ?? "—"}
+                              {p.retours?.customers?.naam ? ` · ${p.retours.customers.naam}` : ""}
+                            </span>
+                            <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div>
@@ -95,6 +134,7 @@ function MagazijnPage() {
               <X className="size-4" /> Stop scannen
             </Button>
           </div>
+
         )}
       </main>
     </div>

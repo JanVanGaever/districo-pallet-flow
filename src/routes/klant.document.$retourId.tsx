@@ -75,6 +75,7 @@ function DocumentPage() {
     year: "numeric",
   });
   const ontvangen = pallets.filter((p) => p.status === "ontvangen").length;
+  const totaalCrediteren = pallets.reduce((sum, p) => sum + (palletWaarde(p) ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -113,7 +114,7 @@ function DocumentPage() {
           </div>
 
           {/* Klant + samenvatting */}
-          <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
+          <div className="mt-6 grid grid-cols-3 gap-6 text-sm">
             <div>
               <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Klant</p>
               <p className="font-medium">{retour.customers?.naam}</p>
@@ -124,6 +125,11 @@ function DocumentPage() {
               <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Samenvatting</p>
               <p>Totaal pallets: <span className="font-medium">{pallets.length}</span></p>
               <p>Ontvangen: <span className="font-medium">{ontvangen} / {pallets.length}</span></p>
+            </div>
+            <div className="rounded-md bg-black/[0.04] p-3">
+              <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Te crediteren</p>
+              <p className="text-2xl font-bold">{eur(totaalCrediteren)}</p>
+              <p className="text-black/60 text-xs">excl. eventuele afwijkingen</p>
             </div>
           </div>
 

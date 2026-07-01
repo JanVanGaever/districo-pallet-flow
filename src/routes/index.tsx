@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, Warehouse, LayoutDashboard, FileSpreadsheet, Settings } from "lucide-react";
+import { Package, Warehouse, LayoutDashboard, FileSpreadsheet, Settings, Truck } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/")({
 
 const tiles = [
   { to: "/klant", title: "Klantenportaal", desc: "Maak een nieuwe retour aan en print de QR-codes.", icon: Package },
+  { to: "/leverancier", title: "Leverancier leeggoed-afhaling", desc: "Regel een leeggoed-retour richting de leverancier (producent).", icon: Truck },
   { to: "/magazijn", title: "Magazijnier-app", desc: "Scan pallets, bevestig en voeg foto's toe.", icon: Warehouse },
   { to: "/kantoor", title: "Kantoor-dashboard", desc: "Volg retours en ontvangsten realtime op.", icon: LayoutDashboard },
   { to: "/producten", title: "Producten importeren", desc: "Upload de productenlijst (XLSX/ODS) naar de gedeelde database.", icon: FileSpreadsheet },

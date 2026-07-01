@@ -1,9 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
-import { ScanLine, X } from "lucide-react";
+import { ScanLine, X, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/magazijn")({
@@ -63,6 +63,12 @@ function MagazijnPage() {
             <p className="mt-8 text-xs text-muted-foreground">
               Tip: de telefooncamera kan de QR ook rechtstreeks openen, want die bevat de directe link naar de pallet.
             </p>
+            <Link
+              to="/magazijn/catalogus"
+              className="mt-8 inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium hover:border-primary"
+            >
+              <BookOpen className="size-4" /> Waardecatalogus openen
+            </Link>
           </div>
         ) : (
           <div>

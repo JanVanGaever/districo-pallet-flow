@@ -126,9 +126,14 @@ export type Database = {
       pallets: {
         Row: {
           created_at: string
+          gecontroleerd_aantal: number | null
+          gewogen_gewicht: number | null
           id: string
           inhoud: string | null
+          klant_handtekening: string | null
           ontvangen_at: string | null
+          ontvangen_door: string | null
+          opgegeven_aantal: number | null
           pallet_type_id: string | null
           palletnummer: string
           positie: number
@@ -138,12 +143,18 @@ export type Database = {
           soort: Database["public"]["Enums"]["pallet_soort"]
           status: Database["public"]["Enums"]["pallet_status"]
           totaal: number
+          verwacht_gewicht: number | null
         }
         Insert: {
           created_at?: string
+          gecontroleerd_aantal?: number | null
+          gewogen_gewicht?: number | null
           id?: string
           inhoud?: string | null
+          klant_handtekening?: string | null
           ontvangen_at?: string | null
+          ontvangen_door?: string | null
+          opgegeven_aantal?: number | null
           pallet_type_id?: string | null
           palletnummer: string
           positie?: number
@@ -153,12 +164,18 @@ export type Database = {
           soort?: Database["public"]["Enums"]["pallet_soort"]
           status?: Database["public"]["Enums"]["pallet_status"]
           totaal?: number
+          verwacht_gewicht?: number | null
         }
         Update: {
           created_at?: string
+          gecontroleerd_aantal?: number | null
+          gewogen_gewicht?: number | null
           id?: string
           inhoud?: string | null
+          klant_handtekening?: string | null
           ontvangen_at?: string | null
+          ontvangen_door?: string | null
+          opgegeven_aantal?: number | null
           pallet_type_id?: string | null
           palletnummer?: string
           positie?: number
@@ -168,6 +185,7 @@ export type Database = {
           soort?: Database["public"]["Enums"]["pallet_soort"]
           status?: Database["public"]["Enums"]["pallet_status"]
           totaal?: number
+          verwacht_gewicht?: number | null
         }
         Relationships: [
           {

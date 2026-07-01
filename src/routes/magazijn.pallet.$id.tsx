@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProducts, fetchPalletTypes, getSignedUrl, CATEGORIES } from "@/lib/districo";
+import { fetchProducts, fetchPalletTypes, fetchProductConfigs, getSignedUrl, confirmPalletReceipt, CATEGORIES } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
+import { SignaturePad } from "@/components/SignaturePad";
 import { Button } from "@/components/ui/button";
-import { Check, Camera, Pencil, PackageCheck } from "lucide-react";
+import { Check, Camera, Pencil, PackageCheck, Scale, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/magazijn/pallet/$id")({
@@ -35,12 +36,35 @@ function PalletPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ["pallet", id], queryFn: () => fetchPallet(id) });
   const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: palletTypes } = useQuery({ queryKey: ["palletTypes"], queryFn: fetchPalletTypes });
+  const { data: productConfigs } = useQuery({ queryKey: ["productConfigs"], queryFn: fetchProductConfigs });
 
   const [editProduct, setEditProduct] = useState(false);
   const [editType, setEditType] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [geteld, setGeteld] = useState<string>("");
+  const [gewogen, setGewogen] = useState<string>("");
+  const [ontvangenDoor, setOntvangenDoor] = useState<string>("");
+  const [handtekening, setHandtekening] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const p = data?.pallet;
+
+  // Verwacht aantal bakken (opgegeven) afleiden uit palletconfiguratie
+  const typeNaam: string = (p?.pallet_types?.naam ?? "").toLowerCase();
+  const cfg = productConfigs?.find((c) => c.id === p?.product_id);
+  const typeStd = palletTypes?.find((t) => t.id === p?.pallet_type_id)?.standaard_bakken ?? null;
+  const opgegevenBakken =
+    typeNaam.includes("chep")
+      ? cfg?.bakken_per_cheppallet ?? typeStd
+      : typeNaam.includes("euro")
+        ? cfg?.bakken_per_europallet ?? typeStd
+        : typeStd;
+
+  useEffect(() => {
+    if (opgegevenBakken != null && geteld === "") setGeteld(String(opgegevenBakken));
+  }, [opgegevenBakken]);
+
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["pallet", id] });
@@ -51,9 +75,8 @@ function PalletPage() {
   }
 
   if (isLoading) return <div className="p-10 text-center text-muted-foreground">Laden…</div>;
-  if (error || !data?.pallet) return <div className="p-10 text-center text-muted-foreground">Pallet niet gevonden.</div>;
+  if (error || !p) return <div className="p-10 text-center text-muted-foreground">Pallet niet gevonden.</div>;
 
-  const p = data.pallet;
   const klant = p.retours?.customers;
 
   async function changeProduct(productId: string, naam: string) {
@@ -99,16 +122,37 @@ function PalletPage() {
       toast.error("Voeg minstens 2 foto's toe voor ontvangst.");
       return;
     }
+    if (!handtekening) {
+      toast.error("Laat de klant digitaal tekenen voor ontvangst.");
+      return;
+    }
     setConfirming(true);
     try {
-      await supabase.from("pallets").update({ status: "ontvangen", ontvangen_at: new Date().toISOString() }).eq("id", id);
-      await audit("ontvangen", new Date().toLocaleString("nl-BE"));
+      const geteldNum = geteld.trim() === "" ? null : Number(geteld);
+      const gewogenNum = gewogen.trim() === "" ? null : Number(gewogen);
+      await confirmPalletReceipt(id, {
+        gecontroleerd_aantal: geteldNum,
+        opgegeven_aantal: opgegevenBakken ?? null,
+        gewogen_gewicht: gewogenNum,
+        verwacht_gewicht: null,
+        ontvangen_door: ontvangenDoor,
+        klant_handtekening: handtekening,
+      });
+      const verschil =
+        opgegevenBakken != null && geteldNum != null ? geteldNum - opgegevenBakken : null;
+      await audit(
+        "ontvangen",
+        `${new Date().toLocaleString("nl-BE")}${ontvangenDoor ? ` · ${ontvangenDoor}` : ""}${
+          verschil != null && verschil !== 0 ? ` · verschil ${verschil > 0 ? "+" : ""}${verschil} bak(ken)` : ""
+        }`,
+      );
       toast.success("Ontvangst bevestigd");
       navigate({ to: "/magazijn" });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setConfirming(false);
+
     }
   }
 
@@ -201,7 +245,71 @@ function PalletPage() {
             <Camera className="size-5" /> {uploading ? "Uploaden…" : "Foto's toevoegen"}
           </Button>
         </div>
+
+        {/* Telling & gewicht — bewijs op innamemoment */}
+        <div className="rounded-xl border bg-card p-4 space-y-4">
+          <p className="text-sm font-semibold flex items-center gap-2"><Scale className="size-4 text-primary" /> Inname-verificatie</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Opgegeven bakken</label>
+              <div className="mt-1 h-11 rounded-lg border bg-muted/40 grid place-items-center text-lg font-semibold">
+                {opgegevenBakken ?? "—"}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Geteld bij inname</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={geteld}
+                onChange={(e) => setGeteld(e.target.value)}
+                className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-lg font-semibold"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {opgegevenBakken != null && geteld.trim() !== "" && Number(geteld) !== opgegevenBakken && (
+            <div className="flex items-center gap-2 rounded-lg bg-warning/15 px-3 py-2 text-sm text-warning-foreground">
+              <AlertTriangle className="size-4 shrink-0 text-warning" />
+              Verschil van {Number(geteld) - opgegevenBakken > 0 ? "+" : ""}
+              {Number(geteld) - opgegevenBakken} bak(ken) t.o.v. opgave.
+            </div>
+          )}
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Gewogen gewicht (kg) — optioneel</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={gewogen}
+              onChange={(e) => setGewogen(e.target.value)}
+              className="mt-1 h-11 w-full rounded-lg border bg-background px-3"
+              placeholder="bv. 240"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Aangenomen door</label>
+            <input
+              type="text"
+              value={ontvangenDoor}
+              onChange={(e) => setOntvangenDoor(e.target.value)}
+              className="mt-1 h-11 w-full rounded-lg border bg-background px-3"
+              placeholder="Naam magazijnier"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Handtekening klant</label>
+            <div className="mt-1">
+              <SignaturePad value={handtekening} onChange={setHandtekening} />
+            </div>
+          </div>
+        </div>
       </main>
+
 
       <div className="fixed inset-x-0 bottom-0 border-t bg-card/95 backdrop-blur p-4">
         <div className="mx-auto max-w-md">

@@ -294,9 +294,28 @@ function Wizard({
 
   const grouped = useMemo(() => {
     const q = search.toLowerCase();
+    // Meest populaire producten per categorie (bovenaan, in deze volgorde)
+    const POPULAR: Record<string, string[]> = {
+      bier: ["jupiler", "maes", "cristal", "leffe", "duvel", "liefmans"],
+      water: ["spa reine", "spa bruisend", "san pelegrino", "chaudfontaine plat", "chaudfontaine bruisend", "eulala"],
+    };
+    const rank = (cat: string, naam: string) => {
+      const list = POPULAR[cat];
+      if (!list) return Infinity;
+      const n = naam.toLowerCase();
+      const idx = list.findIndex((k) => n.includes(k));
+      return idx === -1 ? Infinity : idx;
+    };
     return CATEGORIES.map((cat) => ({
       cat,
-      items: products.filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q)),
+      items: products
+        .filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q))
+        .sort((a, b) => {
+          const ra = rank(cat, a.naam);
+          const rb = rank(cat, b.naam);
+          if (ra !== rb) return ra - rb;
+          return a.naam.localeCompare(b.naam);
+        }),
     })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
   }, [products, search, catFilter]);
 

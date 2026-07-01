@@ -361,6 +361,37 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
               </div>
             </section>
 
+            {(data.pallet.gecontroleerd_aantal != null || data.pallet.gewogen_gewicht != null || data.pallet.ontvangen_door || data.pallet.klant_handtekening) && (
+              <section>
+                <h3 className="text-sm font-semibold text-muted-foreground">Inname-verificatie</h3>
+                <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-muted-foreground">Opgave / geteld</p>
+                    <p className="font-medium">{data.pallet.opgegeven_aantal ?? "—"} / {data.pallet.gecontroleerd_aantal ?? "—"}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-muted-foreground">Gewogen gewicht</p>
+                    <p className="font-medium">{data.pallet.gewogen_gewicht != null ? `${data.pallet.gewogen_gewicht} kg` : "—"}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-muted-foreground">Aangenomen door</p>
+                    <p className="font-medium">{data.pallet.ontvangen_door ?? "—"}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-muted-foreground">Ontvangen op</p>
+                    <p className="font-medium">{data.pallet.ontvangen_at ? new Date(data.pallet.ontvangen_at).toLocaleString("nl-BE") : "—"}</p>
+                  </div>
+                </div>
+                {data.pallet.klant_handtekening && (
+                  <div className="mt-3 rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Handtekening klant</p>
+                    <img src={data.pallet.klant_handtekening} alt="Handtekening klant" className="mt-1 h-24 rounded bg-white object-contain" />
+                  </div>
+                )}
+              </section>
+            )}
+
+
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground">Foto's ({data.photoUrls.length})</h3>
               {data.photoUrls.length === 0 ? (

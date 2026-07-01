@@ -1,10 +1,22 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Html5Qrcode } from "html5-qrcode";
+import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
-import { ScanLine, X, BookOpen } from "lucide-react";
+import { ScanLine, X, BookOpen, FlaskConical, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+
+async function fetchScanbarePallets() {
+  const { data, error } = await supabase
+    .from("pallets")
+    .select("id, palletnummer, status, inhoud, products(naam), retours(retournummer, status, customers(naam))")
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (error) throw error;
+  return (data ?? []).filter((r: any) => r.retours?.status !== "concept") as any[];
+}
 
 export const Route = createFileRoute("/magazijn")({
   ssr: false,

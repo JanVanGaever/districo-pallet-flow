@@ -288,10 +288,10 @@ async function recomputePositions(retourId: string) {
   );
 }
 
-export async function addLineToRetour(retourId: string, customer: Customer, line: CartLine) {
+export async function addLineToRetour(retourId: string, code: string, line: CartLine) {
   const jaar = new Date().getFullYear();
   const rows = Array.from({ length: line.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: line.product.id,
     pallet_type_id: line.palletType.id,
@@ -307,12 +307,12 @@ export async function addLineToRetour(retourId: string, customer: Customer, line
 
 export async function addMixedPalletToRetour(
   retourId: string,
-  customer: Customer,
+  code: string,
   opts: { palletType: PalletType; aantal: number; inhoud: string },
 ) {
   const jaar = new Date().getFullYear();
   const rows = Array.from({ length: opts.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: null,
     pallet_type_id: opts.palletType.id,
@@ -329,14 +329,14 @@ export async function addMixedPalletToRetour(
 
 export async function addLeeggoedPalletToRetour(
   retourId: string,
-  customer: Customer,
+  code: string,
   opts: { soort: "lege_bakken" | "lege_flesjes"; product: Product | null; palletType: PalletType; aantal: number },
 ) {
   const jaar = new Date().getFullYear();
   const label = opts.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
   const inhoud = opts.product ? `${label} — ${opts.product.naam}` : label;
   const rows = Array.from({ length: opts.aantal }, () => ({
-    palletnummer: `PAL-${jaar}-${customer.klantnummer}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
+    palletnummer: `PAL-${jaar}-${code}-${pad(Math.floor(Math.random() * 90000) + 10000, 5)}`,
     retour_id: retourId,
     product_id: opts.product?.id ?? null,
     pallet_type_id: opts.palletType.id,
@@ -370,7 +370,7 @@ export async function deleteConceptRetour(retourId: string) {
   await supabase.from("retours").delete().eq("id", retourId);
 }
 
-export async function submitRetour(retour: RetourWithPallets, customer: Customer) {
+export async function submitRetour(retour: RetourWithPallets, actorNaam: string) {
   const { data: pallets, error } = await supabase
     .from("pallets")
     .select("*")
@@ -391,7 +391,7 @@ export async function submitRetour(retour: RetourWithPallets, customer: Customer
   );
 
   await supabase.from("audit_events").insert(
-    list.map((p) => ({ pallet_id: p.id, type: "aangemaakt" as const, actor: customer.naam })),
+    list.map((p) => ({ pallet_id: p.id, type: "aangemaakt" as const, actor: actorNaam })),
   );
 
   await supabase.from("retours").update({ status: "ingediend" }).eq("id", retour.id);
@@ -449,4 +449,71 @@ export async function fetchCatalogus(): Promise<CatalogusItem[]> {
     leeggoedwaarde_per_bak: Number(p.leeggoedwaarde_per_bak ?? 0),
     leeggoed_per_stuk: Number(p.leeggoed_per_stuk ?? 0),
   })) as CatalogusItem[];
+}
+
+// ---- Leveranciers (leeggoed-afhaling richting producent) ----
+
+export type Leverancier = {
+  id: string;
+  naam: string;
+  plaats: string | null;
+};
+
+// Kort palletnummer-prefix afgeleid van de leveranciernaam (bv. "AB InBev" -> "ABI")
+export function leverancierCode(naam: string): string {
+  const clean = naam.replace(/[^A-Za-z0-9 ]/g, "").trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  const code = parts.length >= 2 ? parts.map((p) => p[0]).join("") : clean.slice(0, 3);
+  return (code || "LEV").toUpperCase();
+}
+
+export async function fetchLeveranciers(): Promise<Leverancier[]> {
+  const { data, error } = await supabase.from("leveranciers").select("*").order("naam");
+  if (error) throw error;
+  return (data ?? []) as Leverancier[];
+}
+
+export async function fetchProductsForLeverancier(leverancier: string): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("leverancier", leverancier)
+    .order("naam");
+  if (error) throw error;
+  return (data as Product[]).map((p) => ({ ...p, leeggoedwaarde_per_bak: Number(p.leeggoedwaarde_per_bak) }));
+}
+
+export async function fetchRetoursForLeverancier(leverancierId: string): Promise<RetourWithPallets[]> {
+  const { data, error } = await supabase
+    .from("retours")
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .eq("leverancier_id", leverancierId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as any[] as RetourWithPallets[];
+}
+
+export async function getOrCreateConceptRetourLeverancier(
+  leverancier: Leverancier,
+): Promise<RetourWithPallets> {
+  const { data: existing } = await supabase
+    .from("retours")
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .eq("leverancier_id", leverancier.id)
+    .eq("status", "concept")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing as any as RetourWithPallets;
+
+  const jaar = new Date().getFullYear();
+  const retNum = Math.floor(Math.random() * 90000) + 10000;
+  const retournummer = `LEV-${jaar}-${pad(retNum, 5)}`;
+  const { data: retour, error } = await supabase
+    .from("retours")
+    .insert({ retournummer, leverancier_id: leverancier.id, type: "leverancier", status: "concept" })
+    .select("*, pallets(*, products(naam, categorie), pallet_types(naam), pallet_photos(id))")
+    .single();
+  if (error) throw error;
+  return retour as any as RetourWithPallets;
 }

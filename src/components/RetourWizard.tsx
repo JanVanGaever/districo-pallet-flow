@@ -1,36 +1,17 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   CATEGORIES,
-  CartLine,
-  Customer,
   Product,
   PalletType,
-  
-  fetchDefaultCustomer,
-  fetchPalletTypes,
-  fetchProducts,
-  fetchRetoursForCustomer,
-  getOrCreateConceptRetour,
   addLineToRetour,
   addMixedPalletToRetour,
   addLeeggoedPalletToRetour,
   removePalletFromRetour,
-  deleteConceptRetour,
-  submitRetour,
 } from "@/lib/districo";
-import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Beer, Box } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Beer, Box } from "lucide-react";
 import { toast } from "sonner";
-
-export const Route = createFileRoute("/klant/")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Klantenportaal — Districo Retour" }] }),
-  component: KlantPage,
-});
 
 const catLabel: Record<string, string> = {
   bier: "Bier",
@@ -41,7 +22,7 @@ const catLabel: Record<string, string> = {
   lege_flesjes: "Lege flesjes",
 };
 
-const MAX_PALLETS = 33;
+export const MAX_PALLETS = 33;
 
 const catSlot: Record<string, string> = {
   bier: "bg-warning text-warning-foreground border-warning",
@@ -52,201 +33,9 @@ const catSlot: Record<string, string> = {
   lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
 };
 
-
-function KlantPage() {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const { data: customer } = useQuery({ queryKey: ["default-customer"], queryFn: fetchDefaultCustomer });
-  const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
-  const { data: palletTypes } = useQuery({ queryKey: ["palletTypes"], queryFn: fetchPalletTypes });
-  const { data: retours } = useQuery({
-    queryKey: ["customer-retours", customer?.id],
-    queryFn: () => fetchRetoursForCustomer(customer!.id),
-    enabled: !!customer,
-  });
-
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [conceptId, setConceptId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const concept = (retours ?? []).find((r) => r.status === "concept") ?? null;
-  const ingediend = (retours ?? []).filter((r) => r.status !== "concept");
-
-  const allPallets = ingediend.flatMap((r) => r.pallets ?? []);
-  const palletStats = {
-    totaal: allPallets.length,
-    klaar: allPallets.filter((p: any) => p.status === "klaar_voor_retour").length,
-    ontvangen: allPallets.filter((p: any) => p.status === "ontvangen").length,
-  };
-
-  function invalidate() {
-    qc.invalidateQueries({ queryKey: ["customer-retours", customer?.id] });
-  }
-
-  async function openWizard() {
-    if (!customer) return;
-    const c = await getOrCreateConceptRetour(customer);
-    setConceptId(c.id);
-    setWizardOpen(true);
-    invalidate();
-  }
-
-  async function submit() {
-    if (!customer || !concept) return;
-    setBusy(true);
-    try {
-      await submitRetour(concept, customer.naam);
-      toast.success(`Retour ${concept.retournummer} ingediend`);
-      setWizardOpen(false);
-      invalidate();
-      navigate({ to: "/klant/print/$retourId", params: { retourId: concept.id } });
-    } catch (e: any) {
-      toast.error("Er ging iets mis: " + e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function discardConcept() {
-    if (!concept) return;
-    if (!confirm("Lopende retour verwijderen?")) return;
-    await deleteConceptRetour(concept.id);
-    setWizardOpen(false);
-    invalidate();
-    toast.success("Lopende retour verwijderd");
-  }
-
-  if (!customer) {
-    return (
-      <div className="min-h-screen bg-background">
-        <AppHeader title="Klantenportaal" />
-        <main className="mx-auto max-w-4xl px-6 py-8 text-muted-foreground">Laden…</main>
-      </div>
-    );
-  }
-
-  const conceptPallets = concept?.pallets ?? [];
-
-  return (
-    <div className="min-h-screen bg-background">
-      <AppHeader title="Klantenportaal" />
-      <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
-        {/* Klant header */}
-        <div className="rounded-xl border bg-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Welkom</p>
-          <h2 className="mt-1 text-2xl font-bold">{customer.naam}</h2>
-          <p className="text-sm text-muted-foreground">Klantnr {customer.klantnummer} · {customer.plaats}</p>
-        </div>
-
-        {/* Pallet-overzicht */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { label: "Pallets ingediend", value: palletStats.totaal },
-            { label: "Klaar voor retour", value: palletStats.klaar },
-            { label: "Ontvangen", value: palletStats.ontvangen },
-          ].map((c) => (
-            <div key={c.label} className="rounded-xl border bg-card p-5">
-              <p className="text-sm text-muted-foreground">{c.label}</p>
-              <p className="mt-1 text-3xl font-bold">{c.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Lopende retour */}
-        {wizardOpen && conceptId && products && palletTypes ? (
-          <Wizard
-            customer={customer}
-            retourId={conceptId}
-            pallets={conceptPallets}
-            products={products}
-            palletTypes={palletTypes}
-            onChange={invalidate}
-            onClose={() => setWizardOpen(false)}
-            onSubmit={submit}
-            onDiscard={discardConcept}
-            busy={busy}
-          />
-        ) : (
-          <div className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Lopende retour</h3>
-              {concept && <span className="text-sm text-muted-foreground">{concept.retournummer}</span>}
-            </div>
-            {concept && conceptPallets.length > 0 ? (
-              <div className="mt-3">
-                <p className="text-sm text-muted-foreground">
-                  {conceptPallets.length} van {MAX_PALLETS} pallets ingegeven — nog niet ingediend.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button onClick={openWizard}><Pencil className="size-4" /> Verder bewerken</Button>
-                  <Button variant="success" onClick={submit} disabled={busy}>
-                    <Check className="size-4" /> Indienen
-                  </Button>
-                  <Button variant="outline" onClick={discardConcept}><Trash2 className="size-4" /> Verwijderen</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <p className="text-sm text-muted-foreground">Geen lopende retour. Start een nieuwe retour.</p>
-                <Button className="mt-3" size="lg" onClick={openWizard}><Plus className="size-5" /> Nieuwe retour</Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Vorige retours */}
-        <div className="rounded-xl border bg-card">
-          <div className="border-b px-5 py-4">
-            <h3 className="font-semibold">Vorige retours</h3>
-          </div>
-          {ingediend.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-muted-foreground">Nog geen ingediende retours.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Retournummer</th>
-                  <th className="px-5 py-3 font-medium">Datum</th>
-                  <th className="px-5 py-3 font-medium">Pallets</th>
-                  <th className="px-5 py-3 font-medium">Ontvangen</th>
-                  <th className="px-5 py-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {ingediend.map((r) => {
-                  const pl = r.pallets ?? [];
-                  const ontv = pl.filter((p: any) => p.status === "ontvangen").length;
-                  return (
-                    <tr key={r.id} className="border-t">
-                      <td className="px-5 py-3 font-medium">{r.retournummer}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
-                      <td className="px-5 py-3">{pl.length}</td>
-                      <td className="px-5 py-3">{ontv} / {pl.length}</td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="inline-flex items-center gap-4">
-                          <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> Document
-                          </Link>
-                          <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> QR-codes
-                          </Link>
-                        </div>
-                      </td>
-
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function Wizard({
-  customer,
+export function RetourWizard({
+  code,
+  actorNaam,
   retourId,
   pallets,
   products,
@@ -256,8 +45,10 @@ function Wizard({
   onSubmit,
   onDiscard,
   busy,
+  allowLeeg = true,
 }: {
-  customer: Customer;
+  code: string;
+  actorNaam: string;
   retourId: string;
   pallets: any[];
   products: Product[];
@@ -267,6 +58,7 @@ function Wizard({
   onSubmit: () => void;
   onDiscard: () => void;
   busy: boolean;
+  allowLeeg?: boolean;
 }) {
   const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
   const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
@@ -294,7 +86,6 @@ function Wizard({
 
   const grouped = useMemo(() => {
     const q = search.toLowerCase();
-    // Meest populaire producten per categorie (bovenaan, in deze volgorde)
     const POPULAR: Record<string, string[]> = {
       bier: ["jupiler", "maes", "cristal", "leffe", "duvel", "liefmans"],
       water: ["spa reine", "spa bruisend", "san pelegrino", "chaudfontaine plat", "chaudfontaine bruisend", "eulala"],
@@ -325,7 +116,6 @@ function Wizard({
 
   const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
 
-  // Group persisted pallets into lines for a compact list
   const lines = useMemo(() => {
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
@@ -354,7 +144,6 @@ function Wizard({
     return Array.from(map.values());
   }, [sortedPallets]);
 
-
   async function addLine() {
     if (!product) return;
     if (aantal > maxToevoegen) {
@@ -363,7 +152,7 @@ function Wizard({
     }
     setWorking(true);
     try {
-      await addLineToRetour(retourId, customer.klantnummer, { product, palletType, aantal });
+      await addLineToRetour(retourId, code, { product, palletType, aantal });
       onChange();
       toast.success(`${aantal}× ${product.naam} toegevoegd`);
       resetWizard();
@@ -392,7 +181,7 @@ function Wizard({
     setWorking(true);
     try {
       const inhoud = mixSelected.map((p) => p.naam).join(", ");
-      await addMixedPalletToRetour(retourId, customer.klantnummer, { palletType, aantal, inhoud });
+      await addMixedPalletToRetour(retourId, code, { palletType, aantal, inhoud });
       onChange();
       toast.success(`${aantal}× gemixte pallet toegevoegd`);
       resetWizard();
@@ -403,7 +192,6 @@ function Wizard({
     }
   }
 
-
   async function addLeeg() {
     if (!isLeeg) return;
     if (aantal > maxToevoegen) {
@@ -412,7 +200,7 @@ function Wizard({
     }
     setWorking(true);
     try {
-      await addLeeggoedPalletToRetour(retourId, customer.klantnummer, {
+      await addLeeggoedPalletToRetour(retourId, code, {
         soort: soort as "lege_bakken" | "lege_flesjes",
         product,
         palletType,
@@ -427,9 +215,6 @@ function Wizard({
       setWorking(false);
     }
   }
-
-
-
 
   async function removeOne(id: string) {
     setWorking(true);
@@ -484,22 +269,26 @@ function Wizard({
               <span className="font-semibold">Gemixte pallet</span>
               <span className="text-xs text-muted-foreground">Meerdere producten samen op één pallet.</span>
             </button>
-            <button
-              onClick={() => { setSoort("lege_bakken"); setStep(1); setProduct(null); }}
-              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
-            >
-              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Box className="size-5" /></span>
-              <span className="font-semibold">Lege bakken</span>
-              <span className="text-xs text-muted-foreground">Bakken zonder flesjes — optioneel per merk.</span>
-            </button>
-            <button
-              onClick={() => { setSoort("lege_flesjes"); setStep(1); setProduct(null); }}
-              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
-            >
-              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Beer className="size-5" /></span>
-              <span className="font-semibold">Lege flesjes</span>
-              <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
-            </button>
+            {allowLeeg && (
+              <>
+                <button
+                  onClick={() => { setSoort("lege_bakken"); setStep(1); setProduct(null); }}
+                  className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+                >
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Box className="size-5" /></span>
+                  <span className="font-semibold">Lege bakken</span>
+                  <span className="text-xs text-muted-foreground">Bakken zonder flesjes — optioneel per merk.</span>
+                </button>
+                <button
+                  onClick={() => { setSoort("lege_flesjes"); setStep(1); setProduct(null); }}
+                  className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+                >
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Beer className="size-5" /></span>
+                  <span className="font-semibold">Lege flesjes</span>
+                  <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -591,7 +380,6 @@ function Wizard({
           ))}
         </div>
       )}
-
 
       {/* GEMIXTE PALLET — stap 1: producten kiezen */}
       {soort === "mixed" && step === 1 && (
@@ -712,7 +500,6 @@ function Wizard({
         </div>
       )}
 
-
       <div className="mt-6 border-t pt-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Overzicht retour</p>
@@ -764,12 +551,16 @@ function Wizard({
           <span className="flex items-center gap-1.5">
             <span className={`inline-block size-3 rounded ${catSlot.mixed}`} /> Gemixt
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className={`inline-block size-3 rounded ${catSlot.lege_bakken}`} /> Lege bakken
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className={`inline-block size-3 rounded ${catSlot.lege_flesjes}`} /> Lege flesjes
-          </span>
+          {allowLeeg && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className={`inline-block size-3 rounded ${catSlot.lege_bakken}`} /> Lege bakken
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className={`inline-block size-3 rounded ${catSlot.lege_flesjes}`} /> Lege flesjes
+              </span>
+            </>
+          )}
           <span className="flex items-center gap-1.5">
             <span className="inline-block size-3 rounded border border-dashed border-muted-foreground/40" /> Vrij
           </span>

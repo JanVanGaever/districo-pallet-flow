@@ -75,6 +75,7 @@ function DocumentPage() {
     year: "numeric",
   });
   const ontvangen = pallets.filter((p) => p.status === "ontvangen").length;
+  const totaalCrediteren = pallets.reduce((sum, p) => sum + (palletWaarde(p) ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-muted/40">

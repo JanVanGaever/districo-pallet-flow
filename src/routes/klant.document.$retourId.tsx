@@ -88,7 +88,7 @@ function DocumentPage() {
             <div>
               <p className="font-semibold text-sm">{retour.retournummer}</p>
               <p className="text-xs text-muted-foreground">
-                {retour.customers?.naam} · {pallets.length} pallets
+                {retour.leveranciers?.naam ?? retour.customers?.naam} · {pallets.length} pallets
               </p>
             </div>
           </div>
@@ -116,10 +116,20 @@ function DocumentPage() {
           {/* Klant + samenvatting */}
           <div className="mt-6 grid grid-cols-3 gap-6 text-sm">
             <div>
-              <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Klant</p>
-              <p className="font-medium">{retour.customers?.naam}</p>
-              <p className="text-black/60">Klantnr. {retour.customers?.klantnummer}</p>
-              <p className="text-black/60">{retour.customers?.plaats}</p>
+              {retour.leveranciers ? (
+                <>
+                  <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Leverancier</p>
+                  <p className="font-medium">{retour.leveranciers.naam}</p>
+                  <p className="text-black/60">{retour.leveranciers.plaats}</p>
+                </>
+              ) : (
+                <>
+                  <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Klant</p>
+                  <p className="font-medium">{retour.customers?.naam}</p>
+                  <p className="text-black/60">Klantnr. {retour.customers?.klantnummer}</p>
+                  <p className="text-black/60">{retour.customers?.plaats}</p>
+                </>
+              )}
             </div>
             <div>
               <p className="mb-1 font-semibold text-black/50 uppercase text-xs tracking-wide">Samenvatting</p>

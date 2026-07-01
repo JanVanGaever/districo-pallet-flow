@@ -78,7 +78,14 @@ export async function fetchProducts(): Promise<Product[]> {
 export async function fetchPalletTypes(): Promise<PalletType[]> {
   const { data, error } = await supabase.from("pallet_types").select("*").order("naam");
   if (error) throw error;
-  return data as PalletType[];
+  const list = data as PalletType[];
+  // Vaste volgorde: Europallet eerst, dan CHEP, dan de rest
+  const ORDER = ["Europallet", "CHEP"];
+  return [...list].sort((a, b) => {
+    const ia = ORDER.indexOf(a.naam);
+    const ib = ORDER.indexOf(b.naam);
+    return (ia === -1 ? ORDER.length : ia) - (ib === -1 ? ORDER.length : ib);
+  });
 }
 
 // Pallettypes waarvoor een standaard aantal bakken per volle pallet zinvol is

@@ -95,7 +95,7 @@ function KlantPage() {
     if (!customer || !concept) return;
     setBusy(true);
     try {
-      await submitRetour(concept, customer);
+      await submitRetour(concept, customer.naam);
       toast.success(`Retour ${concept.retournummer} ingediend`);
       setWizardOpen(false);
       invalidate();
@@ -363,7 +363,7 @@ function Wizard({
     }
     setWorking(true);
     try {
-      await addLineToRetour(retourId, customer, { product, palletType, aantal });
+      await addLineToRetour(retourId, customer.klantnummer, { product, palletType, aantal });
       onChange();
       toast.success(`${aantal}× ${product.naam} toegevoegd`);
       resetWizard();
@@ -392,7 +392,7 @@ function Wizard({
     setWorking(true);
     try {
       const inhoud = mixSelected.map((p) => p.naam).join(", ");
-      await addMixedPalletToRetour(retourId, customer, { palletType, aantal, inhoud });
+      await addMixedPalletToRetour(retourId, customer.klantnummer, { palletType, aantal, inhoud });
       onChange();
       toast.success(`${aantal}× gemixte pallet toegevoegd`);
       resetWizard();
@@ -412,7 +412,7 @@ function Wizard({
     }
     setWorking(true);
     try {
-      await addLeeggoedPalletToRetour(retourId, customer, {
+      await addLeeggoedPalletToRetour(retourId, customer.klantnummer, {
         soort: soort as "lege_bakken" | "lege_flesjes",
         product,
         palletType,

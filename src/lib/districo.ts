@@ -388,3 +388,56 @@ export async function submitRetour(retour: RetourWithPallets, customer: Customer
   await supabase.from("retours").update({ status: "ingediend" }).eq("id", retour.id);
 }
 
+
+// ---- Bewijs op innamemoment: ontvangst bevestigen met verificatiedata ----
+export type OntvangstData = {
+  gecontroleerd_aantal: number | null;
+  opgegeven_aantal: number | null;
+  gewogen_gewicht: number | null;
+  verwacht_gewicht: number | null;
+  ontvangen_door: string;
+  klant_handtekening: string | null;
+};
+
+export async function confirmPalletReceipt(id: string, d: OntvangstData) {
+  const { error } = await supabase
+    .from("pallets")
+    .update({
+      status: "ontvangen",
+      ontvangen_at: new Date().toISOString(),
+      gecontroleerd_aantal: d.gecontroleerd_aantal,
+      opgegeven_aantal: d.opgegeven_aantal,
+      gewogen_gewicht: d.gewogen_gewicht,
+      verwacht_gewicht: d.verwacht_gewicht,
+      ontvangen_door: d.ontvangen_door || null,
+      klant_handtekening: d.klant_handtekening,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+// ---- Waardecatalogus voor de magazijnier ----
+export type CatalogusItem = {
+  id: string;
+  naam: string;
+  categorie: string;
+  merk: string | null;
+  verpakkingstype: string | null;
+  aantal_per_bak: number | null;
+  leeggoedwaarde_per_bak: number;
+  leeggoed_per_stuk: number;
+};
+
+export async function fetchCatalogus(): Promise<CatalogusItem[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, naam, categorie, merk, verpakkingstype, aantal_per_bak, leeggoedwaarde_per_bak, leeggoed_per_stuk")
+    .order("categorie")
+    .order("naam");
+  if (error) throw error;
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    leeggoedwaarde_per_bak: Number(p.leeggoedwaarde_per_bak ?? 0),
+    leeggoed_per_stuk: Number(p.leeggoed_per_stuk ?? 0),
+  })) as CatalogusItem[];
+}

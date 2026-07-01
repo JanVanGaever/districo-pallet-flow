@@ -644,7 +644,7 @@ function Wizard({
         </div>
       )}
 
-      {/* Stap 2: pallettype (beide soorten) */}
+      {/* Stap 2: pallettype + aantal + toevoegen (beide soorten) */}
       {step === 2 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
           <p className="text-sm text-muted-foreground mb-3">
@@ -659,7 +659,7 @@ function Wizard({
             {palletTypes.map((t) => (
               <button
                 key={t.id}
-                onClick={() => { setPalletType(t); setStep(3); }}
+                onClick={() => setPalletType(t)}
                 className={`rounded-lg border p-3 text-sm transition-colors hover:border-primary ${palletType.id === t.id ? "border-primary bg-accent/40 font-medium" : ""}`}
               >
                 {t.naam}
@@ -669,23 +669,8 @@ function Wizard({
               </button>
             ))}
           </div>
-          <div className="mt-4 flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
-          </div>
-        </div>
-      )}
 
-      {/* Stap 3: aantal + toevoegen (beide soorten) */}
-      {step === 3 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
-        <div className="mt-5">
-          <p className="text-sm text-muted-foreground">
-            {soort === "vol"
-              ? `${product?.naam} · ${palletType.naam}`
-              : soort === "mixed"
-                ? `Gemixte pallet · ${palletType.naam}`
-                : `${soortLabel}${product ? ` — ${product.naam}` : ""} · ${palletType.naam}`}
-          </p>
-          <p className="mt-4 text-sm font-medium">Aantal pallets</p>
+          <p className="mt-5 text-sm font-medium">Aantal pallets</p>
           <div className="mt-2 flex items-center gap-4">
             <Button variant="outline" size="icon" className="size-12" onClick={() => setAantal(Math.max(1, aantal - 1))}><Minus /></Button>
             <span className="w-12 text-center text-2xl font-bold">{aantal}</span>
@@ -698,6 +683,18 @@ function Wizard({
             >
               <Plus />
             </Button>
+            <div className="ml-1 flex flex-wrap gap-1.5">
+              {[1, 2, 5, 10].filter((n) => n <= maxToevoegen).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setAantal(n)}
+                  className={`rounded-md border px-3 py-1.5 text-sm transition-colors hover:border-primary ${aantal === n ? "border-primary bg-accent/40 font-medium" : ""}`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
           {soort === "vol" && palletType.standaard_bakken != null && (
@@ -705,14 +702,16 @@ function Wizard({
               ≈ {aantal * palletType.standaard_bakken} bakken ({palletType.standaard_bakken}/pallet × {aantal})
             </p>
           )}
+
           <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="size-4" /> Terug</Button>
+            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
             <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
-              <Plus className="size-4" /> Toevoegen aan retour
+              <Plus className="size-4" /> {aantal}× toevoegen aan retour
             </Button>
           </div>
         </div>
       )}
+
 
       <div className="mt-6 border-t pt-4">
         <div className="flex items-center justify-between">

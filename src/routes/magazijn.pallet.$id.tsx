@@ -75,9 +75,8 @@ function PalletPage() {
   }
 
   if (isLoading) return <div className="p-10 text-center text-muted-foreground">Laden…</div>;
-  if (error || !data?.pallet) return <div className="p-10 text-center text-muted-foreground">Pallet niet gevonden.</div>;
+  if (error || !p) return <div className="p-10 text-center text-muted-foreground">Pallet niet gevonden.</div>;
 
-  const p = data.pallet;
   const klant = p.retours?.customers;
 
   async function changeProduct(productId: string, naam: string) {

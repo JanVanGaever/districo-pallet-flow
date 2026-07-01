@@ -78,11 +78,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Districo Retour — Leeggoed retourbeheer" },
+      {
+        name: "description",
+        content:
+          "Districo Retour beheert leeggoedretours voor klanten, magazijn en kantoor in één gedeelde workflow.",
+      },
+      { name: "author", content: "Districo" },
+      { property: "og:title", content: "Districo Retour — Leeggoed retourbeheer" },
+      {
+        property: "og:description",
+        content:
+          "Klantenportaal, magazijnier-app en kantoor-dashboard voor retourbeheer van pallets en leeggoed.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

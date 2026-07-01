@@ -14,6 +14,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 
 export const Route = createFileRoute("/instellingen")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Instellingen & Handleiding — Districo Retour" },

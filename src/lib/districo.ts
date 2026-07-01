@@ -11,6 +11,8 @@ export type Product = {
   id: string;
   naam: string;
   categorie: string;
+  inhoud: string | null;
+  verpakkingstype: string | null;
   leeggoedwaarde_per_bak: number;
 };
 

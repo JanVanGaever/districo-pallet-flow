@@ -534,7 +534,7 @@ function Wizard({
                     onClick={() => { setProduct(p); setStep(2); }}
                     className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
                   >
-                    <p className="font-medium text-sm">{p.naam}</p>
+                    <p className="font-medium text-sm">{p.naam}{p.inhoud ? ` · ${p.inhoud}` : ""}</p>
                     <p className="text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</p>
                   </button>
                 ))}

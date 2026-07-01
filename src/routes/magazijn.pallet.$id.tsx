@@ -36,12 +36,35 @@ function PalletPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ["pallet", id], queryFn: () => fetchPallet(id) });
   const { data: products } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: palletTypes } = useQuery({ queryKey: ["palletTypes"], queryFn: fetchPalletTypes });
+  const { data: productConfigs } = useQuery({ queryKey: ["productConfigs"], queryFn: fetchProductConfigs });
 
   const [editProduct, setEditProduct] = useState(false);
   const [editType, setEditType] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [geteld, setGeteld] = useState<string>("");
+  const [gewogen, setGewogen] = useState<string>("");
+  const [ontvangenDoor, setOntvangenDoor] = useState<string>("");
+  const [handtekening, setHandtekening] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const p = data?.pallet;
+
+  // Verwacht aantal bakken (opgegeven) afleiden uit palletconfiguratie
+  const typeNaam: string = (p?.pallet_types?.naam ?? "").toLowerCase();
+  const cfg = productConfigs?.find((c) => c.id === p?.product_id);
+  const typeStd = palletTypes?.find((t) => t.id === p?.pallet_type_id)?.standaard_bakken ?? null;
+  const opgegevenBakken =
+    typeNaam.includes("chep")
+      ? cfg?.bakken_per_cheppallet ?? typeStd
+      : typeNaam.includes("euro")
+        ? cfg?.bakken_per_europallet ?? typeStd
+        : typeStd;
+
+  useEffect(() => {
+    if (opgegevenBakken != null && geteld === "") setGeteld(String(opgegevenBakken));
+  }, [opgegevenBakken]);
+
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["pallet", id] });

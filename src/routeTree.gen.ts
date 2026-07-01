@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProductenRouteImport } from './routes/producten'
 import { Route as MagazijnRouteImport } from './routes/magazijn'
+import { Route as LeverancierRouteImport } from './routes/leverancier'
 import { Route as KlantRouteImport } from './routes/klant'
 import { Route as KantoorRouteImport } from './routes/kantoor'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
@@ -29,6 +30,11 @@ const ProductenRoute = ProductenRouteImport.update({
 const MagazijnRoute = MagazijnRouteImport.update({
   id: '/magazijn',
   path: '/magazijn',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeverancierRoute = LeverancierRouteImport.update({
+  id: '/leverancier',
+  path: '/leverancier',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KlantRoute = KlantRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/instellingen': typeof InstellingenRoute
   '/kantoor': typeof KantoorRoute
   '/klant': typeof KlantRouteWithChildren
+  '/leverancier': typeof LeverancierRoute
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/instellingen': typeof InstellingenRoute
   '/kantoor': typeof KantoorRoute
+  '/leverancier': typeof LeverancierRoute
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/instellingen': typeof InstellingenRoute
   '/kantoor': typeof KantoorRoute
   '/klant': typeof KlantRouteWithChildren
+  '/leverancier': typeof LeverancierRoute
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/kantoor'
     | '/klant'
+    | '/leverancier'
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/instellingen'
     | '/kantoor'
+    | '/leverancier'
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/kantoor'
     | '/klant'
+    | '/leverancier'
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
@@ -162,6 +174,7 @@ export interface RootRouteChildren {
   InstellingenRoute: typeof InstellingenRoute
   KantoorRoute: typeof KantoorRoute
   KlantRoute: typeof KlantRouteWithChildren
+  LeverancierRoute: typeof LeverancierRoute
   MagazijnRoute: typeof MagazijnRouteWithChildren
   ProductenRoute: typeof ProductenRoute
 }
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/magazijn'
       fullPath: '/magazijn'
       preLoaderRoute: typeof MagazijnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leverancier': {
+      id: '/leverancier'
+      path: '/leverancier'
+      fullPath: '/leverancier'
+      preLoaderRoute: typeof LeverancierRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/klant': {
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   InstellingenRoute: InstellingenRoute,
   KantoorRoute: KantoorRoute,
   KlantRoute: KlantRouteWithChildren,
+  LeverancierRoute: LeverancierRoute,
   MagazijnRoute: MagazijnRouteWithChildren,
   ProductenRoute: ProductenRoute,
 }

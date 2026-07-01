@@ -14,7 +14,7 @@ export const Route = createFileRoute("/klant/document/$retourId")({
 async function fetchRetourData(retourId: string) {
   const { data: retour } = await supabase
     .from("retours")
-    .select("*, customers(*)")
+    .select("*, customers(*), leveranciers(*)")
     .eq("id", retourId)
     .single();
   const { data: pallets } = await supabase

@@ -35,6 +35,12 @@ export type Pallet = {
   totaal: number;
   inhoud: string | null;
   ontvangen_at: string | null;
+  opgegeven_aantal: number | null;
+  gecontroleerd_aantal: number | null;
+  gewogen_gewicht: number | null;
+  verwacht_gewicht: number | null;
+  ontvangen_door: string | null;
+  klant_handtekening: string | null;
   created_at: string;
 };
 

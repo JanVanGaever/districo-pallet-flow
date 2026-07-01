@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProducts, fetchPalletTypes, getSignedUrl, CATEGORIES } from "@/lib/districo";
+import { fetchProducts, fetchPalletTypes, fetchProductConfigs, getSignedUrl, confirmPalletReceipt, CATEGORIES } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
+import { SignaturePad } from "@/components/SignaturePad";
 import { Button } from "@/components/ui/button";
-import { Check, Camera, Pencil, PackageCheck } from "lucide-react";
+import { Check, Camera, Pencil, PackageCheck, Scale, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/magazijn/pallet/$id")({

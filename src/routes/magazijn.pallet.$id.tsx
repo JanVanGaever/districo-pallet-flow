@@ -122,16 +122,37 @@ function PalletPage() {
       toast.error("Voeg minstens 2 foto's toe voor ontvangst.");
       return;
     }
+    if (!handtekening) {
+      toast.error("Laat de klant digitaal tekenen voor ontvangst.");
+      return;
+    }
     setConfirming(true);
     try {
-      await supabase.from("pallets").update({ status: "ontvangen", ontvangen_at: new Date().toISOString() }).eq("id", id);
-      await audit("ontvangen", new Date().toLocaleString("nl-BE"));
+      const geteldNum = geteld.trim() === "" ? null : Number(geteld);
+      const gewogenNum = gewogen.trim() === "" ? null : Number(gewogen);
+      await confirmPalletReceipt(id, {
+        gecontroleerd_aantal: geteldNum,
+        opgegeven_aantal: opgegevenBakken ?? null,
+        gewogen_gewicht: gewogenNum,
+        verwacht_gewicht: null,
+        ontvangen_door: ontvangenDoor,
+        klant_handtekening: handtekening,
+      });
+      const verschil =
+        opgegevenBakken != null && geteldNum != null ? geteldNum - opgegevenBakken : null;
+      await audit(
+        "ontvangen",
+        `${new Date().toLocaleString("nl-BE")}${ontvangenDoor ? ` · ${ontvangenDoor}` : ""}${
+          verschil != null && verschil !== 0 ? ` · verschil ${verschil > 0 ? "+" : ""}${verschil} bak(ken)` : ""
+        }`,
+      );
       toast.success("Ontvangst bevestigd");
       navigate({ to: "/magazijn" });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setConfirming(false);
+
     }
   }
 

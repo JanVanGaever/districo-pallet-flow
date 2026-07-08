@@ -652,6 +652,9 @@ export function RetourWizard({
             </>
           )}
           <span className="flex items-center gap-1.5">
+            <span className={`inline-block size-3 rounded ${catSlot.lege_pallet}`} /> Lege pallets
+          </span>
+          <span className="flex items-center gap-1.5">
             <span className="inline-block size-3 rounded border border-dashed border-muted-foreground/40" /> Vrij
           </span>
         </div>

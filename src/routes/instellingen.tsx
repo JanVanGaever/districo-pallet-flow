@@ -140,6 +140,10 @@ function Instellingen() {
           </div>
         </div>
 
+        <VoertuigenConfig />
+
+
+
         <div className="mt-8 space-y-4">
           {sections.map((s) => (
             <section key={s.title} className="rounded-xl border bg-card p-6">

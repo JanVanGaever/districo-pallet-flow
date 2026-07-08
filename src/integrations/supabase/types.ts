@@ -375,7 +375,12 @@ export type Database = {
         | "foto_toegevoegd"
         | "product_gewijzigd"
         | "pallettype_gewijzigd"
-      pallet_soort: "vol" | "mixed" | "lege_bakken" | "lege_flesjes"
+      pallet_soort:
+        | "vol"
+        | "mixed"
+        | "lege_bakken"
+        | "lege_flesjes"
+        | "lege_pallet"
       pallet_status: "aangemaakt" | "klaar_voor_retour" | "ontvangen"
     }
     CompositeTypes: {
@@ -511,7 +516,13 @@ export const Constants = {
         "product_gewijzigd",
         "pallettype_gewijzigd",
       ],
-      pallet_soort: ["vol", "mixed", "lege_bakken", "lege_flesjes"],
+      pallet_soort: [
+        "vol",
+        "mixed",
+        "lege_bakken",
+        "lege_flesjes",
+        "lege_pallet",
+      ],
       pallet_status: ["aangemaakt", "klaar_voor_retour", "ontvangen"],
     },
   },

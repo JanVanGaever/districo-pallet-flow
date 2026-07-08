@@ -1,0 +1,1 @@
+ALTER TYPE public.pallet_soort ADD VALUE IF NOT EXISTS 'lege_pallet';

@@ -224,6 +224,37 @@ export function RetourWizard({
     }
   }
 
+  const legeTotaal = Object.values(legeCounts).reduce((s, n) => s + (n || 0), 0);
+
+  function setLegeCount(id: string, n: number) {
+    setLegeCounts((prev) => ({ ...prev, [id]: Math.max(0, n) }));
+  }
+
+  async function addLegePallets() {
+    if (legeTotaal === 0) {
+      toast.error("Geef minstens 1 lege pallet in");
+      return;
+    }
+    if (legeTotaal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      const items = palletTypes
+        .map((t) => ({ palletType: t, aantal: legeCounts[t.id] || 0 }))
+        .filter((it) => it.aantal > 0);
+      await addLegePalletsToRetour(retourId, code, items);
+      onChange();
+      toast.success(`${legeTotaal}× lege pallet toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function removeOne(id: string) {
     setWorking(true);
     try {

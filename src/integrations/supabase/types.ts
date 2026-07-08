@@ -337,6 +337,30 @@ export type Database = {
           },
         ]
       }
+      voertuigen: {
+        Row: {
+          aantal_palletplaatsen: number
+          created_at: string
+          id: string
+          merk: string
+          nummerplaat: string
+        }
+        Insert: {
+          aantal_palletplaatsen?: number
+          created_at?: string
+          id?: string
+          merk: string
+          nummerplaat: string
+        }
+        Update: {
+          aantal_palletplaatsen?: number
+          created_at?: string
+          id?: string
+          merk?: string
+          nummerplaat?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

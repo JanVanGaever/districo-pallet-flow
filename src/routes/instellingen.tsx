@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Package,
   Warehouse,
@@ -9,9 +11,25 @@ import {
   FileText,
   Settings2,
   BookOpen,
+  Truck,
+  Plus,
+  Trash2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+  fetchVoertuigen,
+  addVoertuig,
+  updateVoertuig,
+  deleteVoertuig,
+  type Voertuig,
+} from "@/lib/districo";
 
 export const Route = createFileRoute("/instellingen")({
   ssr: false,
@@ -122,6 +140,10 @@ function Instellingen() {
           </div>
         </div>
 
+        <VoertuigenConfig />
+
+
+
         <div className="mt-8 space-y-4">
           {sections.map((s) => (
             <section key={s.title} className="rounded-xl border bg-card p-6">
@@ -162,5 +184,165 @@ function Instellingen() {
         </section>
       </main>
     </div>
+  );
+}
+
+function VoertuigenConfig() {
+  const qc = useQueryClient();
+  const { data: voertuigen } = useQuery({ queryKey: ["voertuigen"], queryFn: fetchVoertuigen });
+
+  const [merk, setMerk] = useState("");
+  const [nummerplaat, setNummerplaat] = useState("");
+  const [plaatsen, setPlaatsen] = useState("33");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editMerk, setEditMerk] = useState("");
+  const [editPlaat, setEditPlaat] = useState("");
+  const [editPlaatsen, setEditPlaatsen] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: ["voertuigen"] });
+  }
+
+  async function add() {
+    if (!merk.trim() || !nummerplaat.trim()) {
+      toast.error("Vul merk en nummerplaat in");
+      return;
+    }
+    setBusy(true);
+    try {
+      await addVoertuig({
+        merk: merk.trim(),
+        nummerplaat: nummerplaat.trim(),
+        aantal_palletplaatsen: Math.max(1, parseInt(plaatsen) || 0),
+      });
+      setMerk("");
+      setNummerplaat("");
+      setPlaatsen("33");
+      invalidate();
+      toast.success("Voertuig toegevoegd");
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(v: Voertuig) {
+    setEditId(v.id);
+    setEditMerk(v.merk);
+    setEditPlaat(v.nummerplaat);
+    setEditPlaatsen(String(v.aantal_palletplaatsen));
+  }
+
+  async function saveEdit(id: string) {
+    if (!editMerk.trim() || !editPlaat.trim()) {
+      toast.error("Vul merk en nummerplaat in");
+      return;
+    }
+    setBusy(true);
+    try {
+      await updateVoertuig(id, {
+        merk: editMerk.trim(),
+        nummerplaat: editPlaat.trim(),
+        aantal_palletplaatsen: Math.max(1, parseInt(editPlaatsen) || 0),
+      });
+      setEditId(null);
+      invalidate();
+      toast.success("Voertuig bijgewerkt");
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Voertuig verwijderen?")) return;
+    await deleteVoertuig(id);
+    invalidate();
+    toast.success("Voertuig verwijderd");
+  }
+
+  return (
+    <section className="mt-8 rounded-xl border bg-card p-6">
+      <div className="flex items-center gap-3">
+        <div className="size-9 rounded-lg bg-primary/10 text-primary grid place-items-center">
+          <Truck className="size-5" />
+        </div>
+        <h2 className="font-semibold">Configuratie voertuigen</h2>
+      </div>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Beheer de voertuigen die leeggoed ophalen. Elk voertuig heeft een merk, nummerplaat en een
+        aantal palletplaatsen.
+      </p>
+
+      {/* Lijst */}
+      <div className="mt-4 space-y-2">
+        {(voertuigen ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nog geen voertuigen geconfigureerd.</p>
+        ) : (
+          (voertuigen ?? []).map((v) =>
+            editId === v.id ? (
+              <div key={v.id} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+                <Input value={editMerk} onChange={(e) => setEditMerk(e.target.value)} placeholder="Merk" />
+                <Input value={editPlaat} onChange={(e) => setEditPlaat(e.target.value)} placeholder="Nummerplaat" />
+                <Input
+                  type="number"
+                  min={1}
+                  value={editPlaatsen}
+                  onChange={(e) => setEditPlaatsen(e.target.value)}
+                  className="sm:w-24"
+                  placeholder="Plaatsen"
+                />
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="success" onClick={() => saveEdit(v.id)} disabled={busy}>
+                    <Check className="size-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditId(null)}>
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div key={v.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="font-medium">{v.merk} · {v.nummerplaat}</p>
+                  <p className="text-sm text-muted-foreground">{v.aantal_palletplaatsen} palletplaatsen</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => startEdit(v)}>
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => remove(v.id)}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ),
+          )
+        )}
+      </div>
+
+      {/* Nieuw voertuig */}
+      <div className="mt-4 border-t pt-4">
+        <p className="text-sm font-medium">Nieuw voertuig</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+          <Input value={merk} onChange={(e) => setMerk(e.target.value)} placeholder="Merk (bv. Volvo)" />
+          <Input value={nummerplaat} onChange={(e) => setNummerplaat(e.target.value)} placeholder="Nummerplaat (bv. 1-ABC-123)" />
+          <Input
+            type="number"
+            min={1}
+            value={plaatsen}
+            onChange={(e) => setPlaatsen(e.target.value)}
+            className="sm:w-24"
+            placeholder="Plaatsen"
+          />
+          <Button onClick={add} disabled={busy}>
+            <Plus className="size-4" /> Toevoegen
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }

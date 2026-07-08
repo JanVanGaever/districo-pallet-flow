@@ -240,7 +240,22 @@ function KlantPage() {
             </table>
           )}
         </div>
+
+        {/* Instellingen */}
+        <Link
+          to="/instellingen"
+          className="flex items-center gap-3 rounded-xl border bg-card p-5 transition-colors hover:border-primary hover:bg-accent/40"
+        >
+          <div className="size-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
+            <Settings className="size-5" />
+          </div>
+          <div>
+            <p className="font-semibold">Instellingen</p>
+            <p className="text-sm text-muted-foreground">Handleiding en configuratie voertuigen.</p>
+          </div>
+        </Link>
       </main>
+
     </div>
   );
 }

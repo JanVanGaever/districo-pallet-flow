@@ -99,6 +99,35 @@ export async function updatePalletTypeBakken(id: string, standaard_bakken: numbe
   if (error) throw error;
 }
 
+export type Voertuig = {
+  id: string;
+  merk: string;
+  nummerplaat: string;
+  aantal_palletplaatsen: number;
+  created_at: string;
+};
+
+export async function fetchVoertuigen(): Promise<Voertuig[]> {
+  const { data, error } = await supabase.from("voertuigen").select("*").order("created_at");
+  if (error) throw error;
+  return data as Voertuig[];
+}
+
+export async function addVoertuig(v: { merk: string; nummerplaat: string; aantal_palletplaatsen: number }) {
+  const { error } = await supabase.from("voertuigen").insert(v);
+  if (error) throw error;
+}
+
+export async function updateVoertuig(id: string, v: { merk: string; nummerplaat: string; aantal_palletplaatsen: number }) {
+  const { error } = await supabase.from("voertuigen").update(v).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteVoertuig(id: string) {
+  const { error } = await supabase.from("voertuigen").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ---- Productconfigurator (flesjes per bak, bakken per europallet/cheppallet) ----
 export type ProductConfig = {
   id: string;

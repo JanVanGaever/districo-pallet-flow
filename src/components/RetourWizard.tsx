@@ -6,11 +6,12 @@ import {
   addLineToRetour,
   addMixedPalletToRetour,
   addLeeggoedPalletToRetour,
+  addLegePalletsToRetour,
   removePalletFromRetour,
 } from "@/lib/districo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Beer, Box } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Beer, Box, Truck } from "lucide-react";
 import { toast } from "sonner";
 
 const catLabel: Record<string, string> = {
@@ -20,6 +21,7 @@ const catLabel: Record<string, string> = {
   mixed: "Gemixt",
   lege_bakken: "Lege bakken",
   lege_flesjes: "Lege flesjes",
+  lege_pallet: "Lege pallets",
 };
 
 export const MAX_PALLETS = 33;
@@ -31,6 +33,7 @@ const catSlot: Record<string, string> = {
   mixed: "bg-secondary text-secondary-foreground border-secondary",
   lege_bakken: "bg-muted-foreground text-background border-muted-foreground",
   lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
+  lege_pallet: "bg-foreground text-background border-foreground",
 };
 
 export function RetourWizard({
@@ -60,9 +63,9 @@ export function RetourWizard({
   busy: boolean;
   allowLeeg?: boolean;
 }) {
-  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
+  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | "lege_pallet" | null>(null);
   const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
-  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
+  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : soort === "lege_pallet" ? "Lege pallets" : "Lege flesjes";
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export function RetourWizard({
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
   const [aantal, setAantal] = useState(1);
+  const [legeCounts, setLegeCounts] = useState<Record<string, number>>({});
   const [working, setWorking] = useState(false);
 
   function resetWizard() {
@@ -80,6 +84,7 @@ export function RetourWizard({
     setMixSelected([]);
     setPalletType(defaultType);
     setAantal(1);
+    setLegeCounts({});
     setSearch("");
     setCatFilter(null);
   }
@@ -120,21 +125,24 @@ export function RetourWizard({
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
       const isMixed = p.soort === "mixed";
+      const isLegePal = p.soort === "lege_pallet";
       const isLeegP = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
       const key = isMixed
         ? `mixed|${p.inhoud}|${p.pallet_type_id}`
-        : isLeegP
-          ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
-          : `${p.product_id}|${p.pallet_type_id}`;
+        : isLegePal
+          ? `lege_pallet|${p.pallet_type_id}`
+          : isLeegP
+            ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
+            : `${p.product_id}|${p.pallet_type_id}`;
       let g = map.get(key);
       if (!g) {
         const leegNaam = p.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
         g = {
-          naam: isMixed ? "Gemixte pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
-          categorie: isMixed ? "mixed" : isLeegP ? p.soort : p.products?.categorie ?? "",
+          naam: isMixed ? "Gemixte pallet" : isLegePal ? "Lege pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
+          categorie: isMixed ? "mixed" : isLegePal ? "lege_pallet" : isLeegP ? p.soort : p.products?.categorie ?? "",
           type: p.pallet_types?.naam ?? "",
           soort: p.soort ?? "vol",
-          inhoud: isLeegP && p.products?.naam ? p.products.naam : p.inhoud ?? null,
+          inhoud: isLeegP && p.products?.naam ? p.products.naam : isLegePal ? null : p.inhoud ?? null,
           ids: [],
         };
         map.set(key, g);
@@ -216,6 +224,37 @@ export function RetourWizard({
     }
   }
 
+  const legeTotaal = Object.values(legeCounts).reduce((s, n) => s + (n || 0), 0);
+
+  function setLegeCount(id: string, n: number) {
+    setLegeCounts((prev) => ({ ...prev, [id]: Math.max(0, n) }));
+  }
+
+  async function addLegePallets() {
+    if (legeTotaal === 0) {
+      toast.error("Geef minstens 1 lege pallet in");
+      return;
+    }
+    if (legeTotaal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      const items = palletTypes
+        .map((t) => ({ palletType: t, aantal: legeCounts[t.id] || 0 }))
+        .filter((it) => it.aantal > 0);
+      await addLegePalletsToRetour(retourId, code, items);
+      onChange();
+      toast.success(`${legeTotaal}× lege pallet toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function removeOne(id: string) {
     setWorking(true);
     try {
@@ -240,7 +279,7 @@ export function RetourWizard({
           <button onClick={resetWizard} className="rounded-full bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent/70">
             {soortLabel} ✕
           </button>
-          {[1, 2].map((s) => (
+          {soort !== "lege_pallet" && [1, 2].map((s) => (
             <span key={s} className={`rounded-full px-3 py-1 ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
               Stap {s}
             </span>
@@ -289,6 +328,14 @@ export function RetourWizard({
                 </button>
               </>
             )}
+            <button
+              onClick={() => { setSoort("lege_pallet"); setStep(1); setProduct(null); setLegeCounts({}); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Truck className="size-5" /></span>
+              <span className="font-semibold">Lege pallets retourneren</span>
+              <span className="text-xs text-muted-foreground">Enkel lege pallets — geef per type een aantal in.</span>
+            </button>
           </div>
         </div>
       )}
@@ -432,6 +479,46 @@ export function RetourWizard({
         </div>
       )}
 
+      {/* LEGE PALLETS — aantal per type ingeven */}
+      {soort === "lege_pallet" && (
+        <div className="mt-5">
+          <p className="text-sm font-medium">Lege pallets retourneren</p>
+          <p className="mt-1 text-xs text-muted-foreground">Geef per pallettype het aantal in.</p>
+          <div className="mt-4 space-y-3">
+            {palletTypes.map((t) => {
+              const n = legeCounts[t.id] || 0;
+              return (
+                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                  <span className="font-medium text-sm">{t.naam}</span>
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" size="icon" className="size-10" disabled={n <= 0} onClick={() => setLegeCount(t.id, n - 1)}><Minus /></Button>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={n}
+                      onChange={(e) => setLegeCount(t.id, parseInt(e.target.value || "0", 10))}
+                      className="w-16 text-center text-lg font-bold"
+                    />
+                    <Button variant="outline" size="icon" className="size-10" disabled={legeTotaal >= maxToevoegen} onClick={() => setLegeCount(t.id, n + 1)}><Plus /></Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {legeTotaal} lege pallet(s) gekozen · nog {maxToevoegen} van {MAX_PALLETS} beschikbaar
+          </p>
+          <div className="mt-5 flex gap-2">
+            <Button variant="outline" onClick={resetWizard}><ArrowLeft className="size-4" /> Terug</Button>
+            <Button onClick={addLegePallets} disabled={legeTotaal === 0 || legeTotaal > maxToevoegen || working}>
+              <Plus className="size-4" /> {legeTotaal}× toevoegen aan retour
+            </Button>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Stap 2: pallettype + aantal + toevoegen (beide soorten) */}
       {step === 2 && (soort === "vol" ? !!product : soort === "mixed" ? mixSelected.length >= 2 : true) && (
         <div className="mt-5">
@@ -519,13 +606,16 @@ export function RetourWizard({
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
             const slot = sortedPallets[i];
             const slotLeeg = slot && (slot.soort === "lege_bakken" || slot.soort === "lege_flesjes");
-            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
+            const slotLegePal = slot && slot.soort === "lege_pallet";
+            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLegePal ? "lege_pallet" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
             const slotTitle = slot
               ? slot.soort === "mixed"
                 ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
-                : slotLeeg
-                  ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
-                  : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
+                : slotLegePal
+                  ? `${i + 1}. Lege pallet · ${slot.pallet_types?.naam}`
+                  : slotLeeg
+                    ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
+                    : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
               : `Plek ${i + 1} vrij`;
             return (
               <div
@@ -561,6 +651,9 @@ export function RetourWizard({
               </span>
             </>
           )}
+          <span className="flex items-center gap-1.5">
+            <span className={`inline-block size-3 rounded ${catSlot.lege_pallet}`} /> Lege pallets
+          </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block size-3 rounded border border-dashed border-muted-foreground/40" /> Vrij
           </span>

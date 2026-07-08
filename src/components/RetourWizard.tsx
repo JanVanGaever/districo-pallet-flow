@@ -328,6 +328,14 @@ export function RetourWizard({
                 </button>
               </>
             )}
+            <button
+              onClick={() => { setSoort("lege_pallet"); setStep(1); setProduct(null); setLegeCounts({}); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Truck className="size-5" /></span>
+              <span className="font-semibold">Lege pallets retourneren</span>
+              <span className="text-xs text-muted-foreground">Enkel lege pallets — geef per type een aantal in.</span>
+            </button>
           </div>
         </div>
       )}

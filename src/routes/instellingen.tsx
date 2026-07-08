@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Package,
   Warehouse,
@@ -9,9 +11,25 @@ import {
   FileText,
   Settings2,
   BookOpen,
+  Truck,
+  Plus,
+  Trash2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+  fetchVoertuigen,
+  addVoertuig,
+  updateVoertuig,
+  deleteVoertuig,
+  type Voertuig,
+} from "@/lib/districo";
 
 export const Route = createFileRoute("/instellingen")({
   ssr: false,

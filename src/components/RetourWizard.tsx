@@ -63,9 +63,9 @@ export function RetourWizard({
   busy: boolean;
   allowLeeg?: boolean;
 }) {
-  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
+  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | "lege_pallet" | null>(null);
   const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
-  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
+  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : soort === "lege_pallet" ? "Lege pallets" : "Lege flesjes";
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -74,6 +74,7 @@ export function RetourWizard({
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
   const [aantal, setAantal] = useState(1);
+  const [legeCounts, setLegeCounts] = useState<Record<string, number>>({});
   const [working, setWorking] = useState(false);
 
   function resetWizard() {
@@ -83,6 +84,7 @@ export function RetourWizard({
     setMixSelected([]);
     setPalletType(defaultType);
     setAantal(1);
+    setLegeCounts({});
     setSearch("");
     setCatFilter(null);
   }

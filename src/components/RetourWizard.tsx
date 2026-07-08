@@ -138,7 +138,7 @@ export function RetourWizard({
       if (!g) {
         const leegNaam = p.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
         g = {
-          naam: isMixed ? "Gemixte pallet" : isLegePal ? `Lege ${p.pallet_types?.naam ?? "pallet"}` : isLeegP ? leegNaam : p.products?.naam ?? "?",
+          naam: isMixed ? "Gemixte pallet" : isLegePal ? "Lege pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
           categorie: isMixed ? "mixed" : isLegePal ? "lege_pallet" : isLeegP ? p.soort : p.products?.categorie ?? "",
           type: p.pallet_types?.naam ?? "",
           soort: p.soort ?? "vol",

@@ -279,7 +279,7 @@ export function RetourWizard({
           <button onClick={resetWizard} className="rounded-full bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent/70">
             {soortLabel} ✕
           </button>
-          {[1, 2].map((s) => (
+          {soort !== "lege_pallet" && [1, 2].map((s) => (
             <span key={s} className={`rounded-full px-3 py-1 ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
               Stap {s}
             </span>

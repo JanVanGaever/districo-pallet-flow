@@ -21,6 +21,7 @@ const catLabel: Record<string, string> = {
   mixed: "Gemixt",
   lege_bakken: "Lege bakken",
   lege_flesjes: "Lege flesjes",
+  lege_pallet: "Lege pallets",
 };
 
 export const MAX_PALLETS = 33;
@@ -32,6 +33,7 @@ const catSlot: Record<string, string> = {
   mixed: "bg-secondary text-secondary-foreground border-secondary",
   lege_bakken: "bg-muted-foreground text-background border-muted-foreground",
   lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
+  lege_pallet: "bg-foreground text-background border-foreground",
 };
 
 export function RetourWizard({

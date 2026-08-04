@@ -514,6 +514,54 @@ function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; on
             )}
           </div>
 
+          {/* Creditnota zoals ze opgemaakt moet worden */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Creditnota-opmaak</h3>
+              <span className="text-xs text-muted-foreground">{group.retournummer}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {group.partijNaam} · {group.partijSub}
+            </p>
+            {creditLines.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Geen te crediteren leeggoed (geen bakken of leeggoedwaarde geconfigureerd).
+              </p>
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="pb-1 font-medium">Omschrijving</th>
+                    <th className="pb-1 text-right font-medium">Bakken</th>
+                    <th className="pb-1 text-right font-medium">Per bak</th>
+                    <th className="pb-1 text-right font-medium">Bedrag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {creditLines.map((l) => (
+                    <tr key={`${l.naam}-${l.perBak}`} className="border-t">
+                      <td className="py-1.5">
+                        {l.naam}
+                        <span className="ml-1 text-xs text-muted-foreground">({l.pallets} pallet{l.pallets > 1 ? "s" : ""})</span>
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums">{l.bakken}</td>
+                      <td className="py-1.5 text-right tabular-nums">{euro(l.perBak)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{euro(l.totaal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t font-semibold">
+                    <td className="py-2" colSpan={3}>
+                      Totaal te crediteren
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{euro(creditTotaal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+          </div>
+
           {/* Verschilrapport: opgave vs. geteld bij inname, met euro-impact */}
           <div className="rounded-lg border p-4">
             <div className="flex items-center justify-between">

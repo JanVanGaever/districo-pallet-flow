@@ -224,29 +224,17 @@ export function RetourWizard({
     }
   }
 
-  const legeTotaal = Object.values(legeCounts).reduce((s, n) => s + (n || 0), 0);
-
-  function setLegeCount(id: string, n: number) {
-    setLegeCounts((prev) => ({ ...prev, [id]: Math.max(0, n) }));
-  }
 
   async function addLegePallets() {
-    if (legeTotaal === 0) {
-      toast.error("Geef minstens 1 lege pallet in");
-      return;
-    }
-    if (legeTotaal > maxToevoegen) {
+    if (aantal > maxToevoegen) {
       toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
       return;
     }
     setWorking(true);
     try {
-      const items = palletTypes
-        .map((t) => ({ palletType: t, aantal: legeCounts[t.id] || 0 }))
-        .filter((it) => it.aantal > 0);
-      await addLegePalletsToRetour(retourId, code, items);
+      await addLegePalletsToRetour(retourId, code, [{ palletType, aantal }]);
       onChange();
-      toast.success(`${legeTotaal}× lege pallet toegevoegd`);
+      toast.success(`${aantal}× lege ${palletType.naam} toegevoegd`);
       resetWizard();
     } catch (e: any) {
       toast.error("Er ging iets mis: " + e.message);
@@ -279,7 +267,7 @@ export function RetourWizard({
           <button onClick={resetWizard} className="rounded-full bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent/70">
             {soortLabel} ✕
           </button>
-          {soort !== "lege_pallet" && [1, 2].map((s) => (
+          {[1, 2].map((s) => (
             <span key={s} className={`rounded-full px-3 py-1 ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
               Stap {s}
             </span>
@@ -329,12 +317,12 @@ export function RetourWizard({
               </>
             )}
             <button
-              onClick={() => { setSoort("lege_pallet"); setStep(1); setProduct(null); setLegeCounts({}); }}
+              onClick={() => { setSoort("lege_pallet"); setProduct(null); setLegeCounts({}); setStep(2); }}
               className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
             >
               <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Truck className="size-5" /></span>
-              <span className="font-semibold">Lege pallets retourneren</span>
-              <span className="text-xs text-muted-foreground">Enkel lege pallets — geef per type een aantal in.</span>
+              <span className="font-semibold">Lege pallets</span>
+              <span className="text-xs text-muted-foreground">Enkel lege pallets — kies type en aantal.</span>
             </button>
           </div>
         </div>
@@ -479,43 +467,8 @@ export function RetourWizard({
         </div>
       )}
 
-      {/* LEGE PALLETS — aantal per type ingeven */}
-      {soort === "lege_pallet" && (
-        <div className="mt-5">
-          <p className="text-sm font-medium">Lege pallets retourneren</p>
-          <p className="mt-1 text-xs text-muted-foreground">Geef per pallettype het aantal in.</p>
-          <div className="mt-4 space-y-3">
-            {palletTypes.map((t) => {
-              const n = legeCounts[t.id] || 0;
-              return (
-                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <span className="font-medium text-sm">{t.naam}</span>
-                  <div className="flex items-center gap-3">
-                    <Button variant="outline" size="icon" className="size-10" disabled={n <= 0} onClick={() => setLegeCount(t.id, n - 1)}><Minus /></Button>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={n}
-                      onChange={(e) => setLegeCount(t.id, parseInt(e.target.value || "0", 10))}
-                      className="w-16 text-center text-lg font-bold"
-                    />
-                    <Button variant="outline" size="icon" className="size-10" disabled={legeTotaal >= maxToevoegen} onClick={() => setLegeCount(t.id, n + 1)}><Plus /></Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            {legeTotaal} lege pallet(s) gekozen · nog {maxToevoegen} van {MAX_PALLETS} beschikbaar
-          </p>
-          <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={resetWizard}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={addLegePallets} disabled={legeTotaal === 0 || legeTotaal > maxToevoegen || working}>
-              <Plus className="size-4" /> {legeTotaal}× toevoegen aan retour
-            </Button>
-          </div>
-        </div>
-      )}
+
+
 
 
 
@@ -527,7 +480,9 @@ export function RetourWizard({
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
               : soort === "mixed"
                 ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
-                : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
+                : soort === "lege_pallet"
+                  ? <>Lege pallets: <span className="font-medium text-foreground">kies type en aantal</span></>
+                  : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
           </p>
           <p className="text-sm font-medium">Pallettype</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -579,8 +534,8 @@ export function RetourWizard({
           )}
 
           <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
+            <Button variant="outline" onClick={() => (soort === "lege_pallet" ? resetWizard() : setStep(1))}><ArrowLeft className="size-4" /> Terug</Button>
+            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : soort === "lege_pallet" ? addLegePallets : addLeeg} disabled={maxToevoegen === 0 || working}>
               <Plus className="size-4" /> {aantal}× toevoegen aan retour
             </Button>
           </div>

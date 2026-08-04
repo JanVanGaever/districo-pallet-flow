@@ -546,8 +546,8 @@ export function RetourWizard({
           )}
 
           <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
+            <Button variant="outline" onClick={() => (soort === "lege_pallet" ? resetWizard() : setStep(1))}><ArrowLeft className="size-4" /> Terug</Button>
+            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : soort === "lege_pallet" ? addLegePallets : addLeeg} disabled={maxToevoegen === 0 || working}>
               <Plus className="size-4" /> {aantal}× toevoegen aan retour
             </Button>
           </div>

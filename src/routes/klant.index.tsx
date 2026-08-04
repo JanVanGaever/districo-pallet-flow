@@ -283,9 +283,9 @@ function Wizard({
   onDiscard: () => void;
   busy: boolean;
 }) {
-  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
+  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | "lege_pallet" | null>(null);
   const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
-  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
+  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : soort === "lege_pallet" ? "Lege pallets" : "Lege flesjes";
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);

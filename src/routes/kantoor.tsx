@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedUrl, STATUS_LABEL, PalletStatus, AuditEvent } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
-import { X } from "lucide-react";
+import { X, Check, Building2, Factory } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/kantoor")({
   ssr: false,
@@ -15,10 +16,20 @@ export const Route = createFileRoute("/kantoor")({
 async function fetchRows() {
   const { data, error } = await supabase
     .from("pallets")
-    .select("*, products(naam, leeggoedwaarde_per_bak), pallet_types(naam), retours(retournummer, status, type, customers(naam, klantnummer), leveranciers(naam, plaats)), pallet_photos(id)")
+    .select(
+      "*, products(naam, leeggoedwaarde_per_bak), pallet_types(naam), retours(retournummer, status, type, creditnota_nummer, creditnota_at, customers(naam, klantnummer), leveranciers(naam, plaats)), pallet_photos(id)",
+    )
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).filter((r: any) => r.retours?.status !== "concept") as any[];
+}
+
+async function saveCreditnota(retourId: string, nummer: string | null) {
+  const { error } = await supabase
+    .from("retours")
+    .update({ creditnota_nummer: nummer, creditnota_at: nummer ? new Date().toISOString() : null })
+    .eq("id", retourId);
+  if (error) throw error;
 }
 
 const AUDIT_LABEL: Record<string, string> = {
@@ -28,6 +39,8 @@ const AUDIT_LABEL: Record<string, string> = {
   product_gewijzigd: "Product gewijzigd",
   pallettype_gewijzigd: "Pallettype gewijzigd",
 };
+
+const euro = (n: number) => new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
 function StatusBadge({ status }: { status: PalletStatus }) {
   const cls =
@@ -42,14 +55,23 @@ function StatusBadge({ status }: { status: PalletStatus }) {
 type RetourGroup = {
   retourId: string;
   retournummer: string;
-  klantNaam: string;
-  klantnummer: string;
+  soort: "klant" | "leverancier";
+  partijNaam: string;
+  partijSub: string;
   pallets: any[];
   totaal: number;
   ontvangen: number;
   fotos: number;
+  waarde: number;
+  creditnotaNummer: string | null;
+  creditnotaAt: string | null;
   laatsteActiviteit: string;
 };
+
+function palletWaarde(p: any) {
+  const aantal = p.gecontroleerd_aantal ?? p.opgegeven_aantal ?? 0;
+  return Number(p.products?.leeggoedwaarde_per_bak ?? 0) * Number(aantal);
+}
 
 function groupByRetour(rows: any[]): RetourGroup[] {
   const map = new Map<string, RetourGroup>();
@@ -57,15 +79,22 @@ function groupByRetour(rows: any[]): RetourGroup[] {
     const id = r.retour_id;
     let g = map.get(id);
     if (!g) {
+      const isLev = !!r.retours?.leveranciers || r.retours?.type === "leverancier";
       g = {
         retourId: id,
         retournummer: r.retours?.retournummer ?? "—",
-        klantNaam: r.retours?.leveranciers?.naam ?? r.retours?.customers?.naam ?? "Onbekend",
-        klantnummer: r.retours?.leveranciers ? "Leverancier" : (r.retours?.customers?.klantnummer ?? ""),
+        soort: isLev ? "leverancier" : "klant",
+        partijNaam: r.retours?.leveranciers?.naam ?? r.retours?.customers?.naam ?? "Onbekend",
+        partijSub: isLev
+          ? (r.retours?.leveranciers?.plaats ?? "Leverancier")
+          : `Klantnr ${r.retours?.customers?.klantnummer ?? "—"}`,
         pallets: [],
         totaal: 0,
         ontvangen: 0,
         fotos: 0,
+        waarde: 0,
+        creditnotaNummer: r.retours?.creditnota_nummer ?? null,
+        creditnotaAt: r.retours?.creditnota_at ?? null,
         laatsteActiviteit: r.created_at,
       };
       map.set(id, g);
@@ -74,6 +103,7 @@ function groupByRetour(rows: any[]): RetourGroup[] {
     g.totaal += 1;
     if (r.status === "ontvangen") g.ontvangen += 1;
     g.fotos += r.pallet_photos?.length ?? 0;
+    g.waarde += palletWaarde(r);
     if (new Date(r.created_at) > new Date(g.laatsteActiviteit)) g.laatsteActiviteit = r.created_at;
   }
   return Array.from(map.values());
@@ -91,10 +121,109 @@ function RetourStatusBadge({ ontvangen, totaal }: { ontvangen: number; totaal: n
   return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>{label}</span>;
 }
 
+function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function CreditnotaCell({
+  group,
+  onSaved,
+}: {
+  group: RetourGroup;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(group.creditnotaNummer ?? "");
+  const [busy, setBusy] = useState(false);
+  const isLev = group.soort === "leverancier";
+
+  async function save(nummer: string | null) {
+    setBusy(true);
+    try {
+      await saveCreditnota(group.retourId, nummer);
+      toast.success(nummer ? (isLev ? "Creditnota leverancier bevestigd" : "Creditnota geregistreerd") : "Creditnota verwijderd");
+      setEditing(false);
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message ?? "Opslaan mislukt");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (group.creditnotaNummer && !editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-success text-success-foreground">
+          <Check className="size-3.5" strokeWidth={3} />
+        </span>
+        <span className="font-medium">{group.creditnotaNummer}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setValue(group.creditnotaNummer ?? "");
+            setEditing(true);
+          }}
+          className="text-xs text-muted-foreground underline hover:text-foreground"
+        >
+          wijzig
+        </button>
+      </div>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setEditing(true);
+        }}
+        className="rounded-lg border border-dashed px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
+      >
+        {isLev ? "Creditnota ontvangen?" : "Creditnotanummer invullen"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && value.trim()) void save(value.trim());
+          if (e.key === "Escape") setEditing(false);
+        }}
+        placeholder="CN-2026-001"
+        className="w-32 rounded-lg border bg-background px-2 py-1 text-sm"
+      />
+      <button
+        disabled={busy || !value.trim()}
+        onClick={() => void save(value.trim())}
+        className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+      >
+        Bevestig
+      </button>
+      <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:text-foreground">
+        annuleer
+      </button>
+    </div>
+  );
+}
+
 function KantoorPage() {
   const qc = useQueryClient();
   const { data: rows } = useQuery({ queryKey: ["kantoor-rows"], queryFn: fetchRows });
   const [selectedRetour, setSelectedRetour] = useState<string | null>(null);
+  const [tab, setTab] = useState<"klant" | "leverancier">("klant");
 
   useEffect(() => {
     const channel = supabase
@@ -105,95 +234,181 @@ function KantoorPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "pallet_photos" }, () => {
         qc.invalidateQueries({ queryKey: ["kantoor-rows"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "retours" }, () => {
+        qc.invalidateQueries({ queryKey: ["kantoor-rows"] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [qc]);
 
-  const today = new Date().toDateString();
-  const retoursVandaag = new Set(
-    (rows ?? []).filter((r) => new Date(r.created_at).toDateString() === today).map((r) => r.retour_id),
-  ).size;
-  const ontvangenVandaag = (rows ?? []).filter((r) => r.ontvangen_at && new Date(r.ontvangen_at).toDateString() === today).length;
-  const nogTeOntvangen = (rows ?? []).filter((r) => r.status !== "ontvangen").length;
-
-  const cards = [
-    { label: "Retours vandaag", value: retoursVandaag },
-    { label: "Pallets ontvangen vandaag", value: ontvangenVandaag },
-    { label: "Nog te ontvangen", value: nogTeOntvangen },
-  ];
-
-  const retours = groupByRetour(rows ?? []).sort(
+  const alle = groupByRetour(rows ?? []).sort(
     (a, b) => new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime(),
   );
+  const klanten = alle.filter((g) => g.soort === "klant");
+  const leveranciers = alle.filter((g) => g.soort === "leverancier");
+  const retours = tab === "klant" ? klanten : leveranciers;
+
+  const totals = (list: RetourGroup[]) => {
+    const waarde = list.reduce((s, g) => s + g.waarde, 0);
+    const open = list.filter((g) => !g.creditnotaNummer);
+    return {
+      aantal: list.length,
+      pallets: list.reduce((s, g) => s + g.totaal, 0),
+      waarde,
+      afgehandeld: list.length - open.length,
+      openWaarde: open.reduce((s, g) => s + g.waarde, 0),
+    };
+  };
+  const t = totals(retours);
+  const tk = totals(klanten);
+  const tl = totals(leveranciers);
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader title="Kantoor-dashboard" />
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {cards.map((c) => (
-            <div key={c.label} className="rounded-xl border bg-card p-5">
-              <p className="text-sm text-muted-foreground">{c.label}</p>
-              <p className="mt-1 text-3xl font-bold">{c.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 flex items-center gap-2">
-          <span className="text-sm font-medium">Retours per klant</span>
-          <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight">Overzicht retours &amp; creditnota's</h1>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-2 rounded-full bg-success animate-pulse" /> Live
           </span>
         </div>
 
-        <div className="mt-3 overflow-x-auto rounded-xl border bg-card">
+        {/* Globale totalen: klanten vs. leveranciers */}
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2">
+              <Building2 className="size-4 text-primary" />
+              <p className="font-semibold">Klanten</p>
+            </div>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{euro(tk.waarde)}</p>
+            <p className="text-xs text-muted-foreground">
+              {tk.aantal} retours · {tk.pallets} pallets · {tk.afgehandeld}/{tk.aantal} gecrediteerd
+            </p>
+            <p className="mt-1 text-xs font-medium text-warning-foreground">Nog te crediteren: {euro(tk.openWaarde)}</p>
+          </div>
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2">
+              <Factory className="size-4 text-primary" />
+              <p className="font-semibold">Leveranciers</p>
+            </div>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{euro(tl.waarde)}</p>
+            <p className="text-xs text-muted-foreground">
+              {tl.aantal} retours · {tl.pallets} pallets · {tl.afgehandeld}/{tl.aantal} creditnota ontvangen
+            </p>
+            <p className="mt-1 text-xs font-medium text-warning-foreground">Nog te ontvangen: {euro(tl.openWaarde)}</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-8 inline-flex rounded-xl border bg-card p-1">
+          {([
+            ["klant", `Klanten (${klanten.length})`],
+            ["leverancier", `Leveranciers (${leveranciers.length})`],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                tab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <KpiCard label="Retours" value={t.aantal} sub={`${t.pallets} pallets`} />
+          <KpiCard
+            label={tab === "klant" ? "Creditnota's opgemaakt" : "Creditnota's ontvangen"}
+            value={`${t.afgehandeld} / ${t.aantal}`}
+          />
+          <KpiCard label="Totale leeggoedwaarde" value={euro(t.waarde)} sub={`Open: ${euro(t.openWaarde)}`} />
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Retournummer</th>
-                <th className="px-4 py-3 font-medium">Klant</th>
+                <th className="px-4 py-3 font-medium">{tab === "klant" ? "Klant" : "Leverancier"}</th>
                 <th className="px-4 py-3 font-medium">Pallets</th>
                 <th className="px-4 py-3 font-medium">Ontvangen</th>
-                <th className="px-4 py-3 font-medium">Foto's</th>
+                <th className="px-4 py-3 text-right font-medium">Waarde</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">{tab === "klant" ? "Creditnota" : "Creditnota leverancier"}</th>
               </tr>
             </thead>
             <tbody>
               {retours.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Nog geen retours.</td></tr>
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    Nog geen retours.
+                  </td>
+                </tr>
               ) : (
                 retours.map((g) => (
-                  <tr key={g.retourId} className="cursor-pointer border-t hover:bg-accent/30" onClick={() => setSelectedRetour(g.retourId)}>
+                  <tr
+                    key={g.retourId}
+                    className="cursor-pointer border-t hover:bg-accent/30"
+                    onClick={() => setSelectedRetour(g.retourId)}
+                  >
                     <td className="px-4 py-3 font-medium">{g.retournummer}</td>
                     <td className="px-4 py-3">
-                      <div>{g.klantNaam}</div>
-                      <div className="text-xs text-muted-foreground">Klantnr {g.klantnummer}</div>
+                      <div>{g.partijNaam}</div>
+                      <div className="text-xs text-muted-foreground">{g.partijSub}</div>
                     </td>
                     <td className="px-4 py-3">{g.totaal}</td>
-                    <td className="px-4 py-3">{g.ontvangen} / {g.totaal}</td>
-                    <td className="px-4 py-3">{g.fotos}</td>
-                    <td className="px-4 py-3"><RetourStatusBadge ontvangen={g.ontvangen} totaal={g.totaal} /></td>
+                    <td className="px-4 py-3">
+                      {g.ontvangen} / {g.totaal}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">{euro(g.waarde)}</td>
+                    <td className="px-4 py-3">
+                      <RetourStatusBadge ontvangen={g.ontvangen} totaal={g.totaal} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <CreditnotaCell
+                        group={g}
+                        onSaved={() => qc.invalidateQueries({ queryKey: ["kantoor-rows"] })}
+                      />
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
+            {retours.length > 0 && (
+              <tfoot>
+                <tr className="border-t bg-muted/40 font-medium">
+                  <td className="px-4 py-3" colSpan={2}>
+                    Totaal {tab === "klant" ? "klanten" : "leveranciers"}
+                  </td>
+                  <td className="px-4 py-3">{t.pallets}</td>
+                  <td className="px-4 py-3" />
+                  <td className="px-4 py-3 text-right tabular-nums">{euro(t.waarde)}</td>
+                  <td className="px-4 py-3" />
+                  <td className="px-4 py-3">
+                    {t.afgehandeld} / {t.aantal} afgehandeld
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </main>
 
       {selectedRetour && (
         <RetourDetailPanel
-          group={retours.find((g) => g.retourId === selectedRetour)!}
+          group={alle.find((g) => g.retourId === selectedRetour)!}
           onClose={() => setSelectedRetour(null)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["kantoor-rows"] })}
         />
       )}
     </div>
   );
 }
-
-const euro = (n: number) => new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(n);
 
 type VerschilRow = { pallet: any; opgegeven: number; geteld: number; verschil: number; impact: number };
 
@@ -210,7 +425,7 @@ function buildVerschilrapport(pallets: any[]) {
   return { rows, totaalImpact };
 }
 
-function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: () => void }) {
+function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; onClose: () => void; onSaved: () => void }) {
   const [selectedPallet, setSelectedPallet] = useState<string | null>(null);
   const { rows: verschilRows, totaalImpact } = buildVerschilrapport(group.pallets);
 
@@ -220,9 +435,13 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-5 py-4">
           <div>
             <p className="font-semibold">{group.retournummer}</p>
-            <p className="text-xs text-muted-foreground">{group.klantNaam} · Klantnr {group.klantnummer}</p>
+            <p className="text-xs text-muted-foreground">
+              {group.partijNaam} · {group.partijSub}
+            </p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="size-5" />
+          </button>
         </div>
         <div className="space-y-4 p-5">
           <div className="grid grid-cols-3 gap-3 text-sm">
@@ -232,12 +451,33 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
             </div>
             <div className="rounded-lg border p-3">
               <p className="text-muted-foreground">Ontvangen</p>
-              <p className="font-medium">{group.ontvangen} / {group.totaal}</p>
+              <p className="font-medium">
+                {group.ontvangen} / {group.totaal}
+              </p>
             </div>
             <div className="rounded-lg border p-3">
-              <p className="text-muted-foreground">Foto's</p>
-              <p className="font-medium">{group.fotos}</p>
+              <p className="text-muted-foreground">Waarde</p>
+              <p className="font-medium">{euro(group.waarde)}</p>
             </div>
+          </div>
+
+          <div className="rounded-lg border p-4">
+            <h3 className="text-sm font-semibold">
+              {group.soort === "klant" ? "Creditnota klant" : "Creditnota leverancier"}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {group.soort === "klant"
+                ? "Vul het nummer uit het boekhoudpakket in zodra de creditnota is opgemaakt."
+                : "Bevestig met het nummer van de ontvangen creditnota van de leverancier."}
+            </p>
+            <div className="mt-3">
+              <CreditnotaCell group={group} onSaved={onSaved} />
+            </div>
+            {group.creditnotaAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Geregistreerd op {new Date(group.creditnotaAt).toLocaleString("nl-BE")}
+              </p>
+            )}
           </div>
 
           {/* Verschilrapport: opgave vs. geteld bij inname, met euro-impact */}
@@ -245,8 +485,11 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Verschilrapport</h3>
               {verschilRows.length > 0 && (
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${totaalImpact < 0 ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
-                  Euro-impact {totaalImpact > 0 ? "+" : ""}{euro(totaalImpact)}
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${totaalImpact < 0 ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}
+                >
+                  Euro-impact {totaalImpact > 0 ? "+" : ""}
+                  {euro(totaalImpact)}
                 </span>
               )}
             </div>
@@ -269,11 +512,15 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
                       <td className="py-1.5">{r.pallet.palletnummer}</td>
                       <td className="py-1.5 text-right tabular-nums">{r.opgegeven}</td>
                       <td className="py-1.5 text-right tabular-nums">{r.geteld}</td>
-                      <td className={`py-1.5 text-right font-medium tabular-nums ${r.verschil < 0 ? "text-destructive" : "text-success"}`}>
-                        {r.verschil > 0 ? "+" : ""}{r.verschil}
+                      <td
+                        className={`py-1.5 text-right font-medium tabular-nums ${r.verschil < 0 ? "text-destructive" : "text-success"}`}
+                      >
+                        {r.verschil > 0 ? "+" : ""}
+                        {r.verschil}
                       </td>
                       <td className={`py-1.5 text-right tabular-nums ${r.impact < 0 ? "text-destructive" : "text-success"}`}>
-                        {r.impact > 0 ? "+" : ""}{euro(r.impact)}
+                        {r.impact > 0 ? "+" : ""}
+                        {euro(r.impact)}
                       </td>
                     </tr>
                   ))}
@@ -281,7 +528,6 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
               </table>
             )}
           </div>
-
 
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground">Pallets</h3>
@@ -316,7 +562,7 @@ function RetourDetailPanel({ group, onClose }: { group: RetourGroup; onClose: ()
 async function fetchDetail(palletId: string) {
   const { data: pallet } = await supabase
     .from("pallets")
-    .select("*, products(naam), pallet_types(naam), retours(retournummer, customers(naam, klantnummer, plaats))")
+    .select("*, products(naam), pallet_types(naam), retours(retournummer, customers(naam, klantnummer, plaats), leveranciers(naam, plaats))")
     .eq("id", palletId)
     .single();
   const { data: photos } = await supabase.from("pallet_photos").select("*").eq("pallet_id", palletId).order("created_at");
@@ -333,17 +579,27 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
       <aside className="h-full w-full max-w-lg overflow-y-auto bg-background shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 flex items-center justify-between border-b bg-card px-5 py-4">
           <p className="font-semibold">{data?.pallet?.palletnummer ?? "Laden…"}</p>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="size-5" />
+          </button>
         </div>
         {data?.pallet && (
           <div className="space-y-6 p-5">
             <section>
-              <h3 className="text-sm font-semibold text-muted-foreground">Klant</h3>
-              <p className="mt-1 font-medium">{data.pallet.retours?.customers?.naam}</p>
-              <p className="text-sm text-muted-foreground">
-                Klantnr {data.pallet.retours?.customers?.klantnummer} · {data.pallet.retours?.customers?.plaats}
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {data.pallet.retours?.leveranciers ? "Leverancier" : "Klant"}
+              </h3>
+              <p className="mt-1 font-medium">
+                {data.pallet.retours?.leveranciers?.naam ?? data.pallet.retours?.customers?.naam}
               </p>
-              <p className="text-sm text-muted-foreground">{data.pallet.retours?.retournummer} · Pallet {data.pallet.positie} van {data.pallet.totaal}</p>
+              <p className="text-sm text-muted-foreground">
+                {data.pallet.retours?.leveranciers
+                  ? data.pallet.retours.leveranciers.plaats
+                  : `Klantnr ${data.pallet.retours?.customers?.klantnummer} · ${data.pallet.retours?.customers?.plaats}`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {data.pallet.retours?.retournummer} · Pallet {data.pallet.positie} van {data.pallet.totaal}
+              </p>
             </section>
 
             <section className="grid grid-cols-2 gap-3 text-sm">
@@ -361,13 +617,18 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
               </div>
             </section>
 
-            {(data.pallet.gecontroleerd_aantal != null || data.pallet.gewogen_gewicht != null || data.pallet.ontvangen_door || data.pallet.klant_handtekening) && (
+            {(data.pallet.gecontroleerd_aantal != null ||
+              data.pallet.gewogen_gewicht != null ||
+              data.pallet.ontvangen_door ||
+              data.pallet.klant_handtekening) && (
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground">Inname-verificatie</h3>
                 <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-lg border p-3">
                     <p className="text-muted-foreground">Opgave / geteld</p>
-                    <p className="font-medium">{data.pallet.opgegeven_aantal ?? "—"} / {data.pallet.gecontroleerd_aantal ?? "—"}</p>
+                    <p className="font-medium">
+                      {data.pallet.opgegeven_aantal ?? "—"} / {data.pallet.gecontroleerd_aantal ?? "—"}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-muted-foreground">Gewogen gewicht</p>
@@ -379,7 +640,9 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
                   </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-muted-foreground">Ontvangen op</p>
-                    <p className="font-medium">{data.pallet.ontvangen_at ? new Date(data.pallet.ontvangen_at).toLocaleString("nl-BE") : "—"}</p>
+                    <p className="font-medium">
+                      {data.pallet.ontvangen_at ? new Date(data.pallet.ontvangen_at).toLocaleString("nl-BE") : "—"}
+                    </p>
                   </div>
                 </div>
                 {data.pallet.klant_handtekening && (
@@ -390,7 +653,6 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
                 )}
               </section>
             )}
-
 
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground">Foto's ({data.photoUrls.length})</h3>

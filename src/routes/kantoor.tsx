@@ -17,7 +17,7 @@ async function fetchRows() {
   const { data, error } = await supabase
     .from("pallets")
     .select(
-      "*, products(naam, leeggoedwaarde_per_bak), pallet_types(naam), retours(retournummer, status, type, creditnota_nummer, creditnota_at, customers(naam, klantnummer), leveranciers(naam, plaats)), pallet_photos(id)",
+      "*, products(naam, leeggoedwaarde_per_bak, aantal_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken), retours(retournummer, status, type, creditnota_nummer, creditnota_at, customers(naam, klantnummer, plaats), leveranciers(naam, plaats)), pallet_photos(id)",
     )
     .order("created_at", { ascending: false });
   if (error) throw error;

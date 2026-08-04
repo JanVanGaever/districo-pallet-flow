@@ -838,7 +838,7 @@ function Wizard({
           <p className="text-sm font-semibold">Overzicht retour</p>
           <p className="text-sm font-semibold tabular-nums">
             <span className={totaal >= MAX_PALLETS ? "text-warning" : "text-foreground"}>{totaal}</span>
-            <span className="text-muted-foreground"> / {MAX_PALLETS} pallets</span>
+            <span className="text-muted-foreground"> / {MAX_PALLETS} plaatsen</span>
           </p>
         </div>
 

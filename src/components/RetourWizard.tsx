@@ -213,7 +213,7 @@ export function RetourWizard({
   async function addLine() {
     if (!product) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -241,7 +241,7 @@ export function RetourWizard({
       return;
     }
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -261,7 +261,7 @@ export function RetourWizard({
   async function addLeeg() {
     if (!isLeeg) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -285,7 +285,7 @@ export function RetourWizard({
 
   async function addLegePallets() {
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);

@@ -442,7 +442,7 @@ function Wizard({
   async function addLine() {
     if (!product) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -470,7 +470,7 @@ function Wizard({
       return;
     }
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -491,7 +491,7 @@ function Wizard({
   async function addLeeg() {
     if (!isLeeg) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -513,7 +513,7 @@ function Wizard({
   }
   async function addLegePallets() {
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);

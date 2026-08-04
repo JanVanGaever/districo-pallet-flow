@@ -462,6 +462,7 @@ function buildVerschilrapport(pallets: any[]) {
 function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; onClose: () => void; onSaved: () => void }) {
   const [selectedPallet, setSelectedPallet] = useState<string | null>(null);
   const { rows: verschilRows, totaalImpact } = buildVerschilrapport(group.pallets);
+  const { lines: creditLines, totaal: creditTotaal } = buildCreditnota(group.pallets);
 
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-foreground/20 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose}>

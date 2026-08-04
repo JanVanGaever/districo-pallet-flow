@@ -17,7 +17,7 @@ async function fetchRows() {
   const { data, error } = await supabase
     .from("pallets")
     .select(
-      "*, products(naam, leeggoedwaarde_per_bak), pallet_types(naam), retours(retournummer, status, type, creditnota_nummer, creditnota_at, customers(naam, klantnummer), leveranciers(naam, plaats)), pallet_photos(id)",
+      "*, products(naam, leeggoedwaarde_per_bak, aantal_per_bak, bakken_per_europallet, bakken_per_cheppallet), pallet_types(naam, standaard_bakken), retours(retournummer, status, type, creditnota_nummer, creditnota_at, customers(naam, klantnummer, plaats), leveranciers(naam, plaats)), pallet_photos(id)",
     )
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -68,10 +68,44 @@ type RetourGroup = {
   laatsteActiviteit: string;
 };
 
-function palletWaarde(p: any) {
-  const aantal = p.gecontroleerd_aantal ?? p.opgegeven_aantal ?? 0;
-  return Number(p.products?.leeggoedwaarde_per_bak ?? 0) * Number(aantal);
+/** Aantal bakken op een volle pallet: geteld bij inname > opgave > configuratie per pallettype. */
+function palletBakken(p: any): number {
+  if (p.gecontroleerd_aantal != null) return Number(p.gecontroleerd_aantal);
+  if (p.opgegeven_aantal != null) return Number(p.opgegeven_aantal);
+  if (p.soort !== "vol" || !p.products) return 0;
+  const isChep = /chep/i.test(p.pallet_types?.naam ?? "");
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    0;
+  return Number(bakken ?? 0);
 }
+
+function palletWaarde(p: any) {
+  return palletBakken(p) * Number(p.products?.leeggoedwaarde_per_bak ?? 0);
+}
+
+type CreditLine = { naam: string; bakken: number; perBak: number; pallets: number; totaal: number };
+
+/** Creditnota-voorstel: per product samengeteld over alle pallets van de retour. */
+function buildCreditnota(pallets: any[]): { lines: CreditLine[]; totaal: number } {
+  const map = new Map<string, CreditLine>();
+  for (const p of pallets) {
+    const bakken = palletBakken(p);
+    const perBak = Number(p.products?.leeggoedwaarde_per_bak ?? 0);
+    if (!bakken || !perBak) continue;
+    const naam = p.products?.naam ?? p.inhoud ?? "Onbekend product";
+    const key = `${naam}|${perBak}`;
+    const line = map.get(key) ?? { naam, bakken: 0, perBak, pallets: 0, totaal: 0 };
+    line.bakken += bakken;
+    line.pallets += 1;
+    line.totaal += bakken * perBak;
+    map.set(key, line);
+  }
+  const lines = Array.from(map.values()).sort((a, b) => b.totaal - a.totaal);
+  return { lines, totaal: lines.reduce((s, l) => s + l.totaal, 0) };
+}
+
 
 function groupByRetour(rows: any[]): RetourGroup[] {
   const map = new Map<string, RetourGroup>();
@@ -428,6 +462,7 @@ function buildVerschilrapport(pallets: any[]) {
 function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; onClose: () => void; onSaved: () => void }) {
   const [selectedPallet, setSelectedPallet] = useState<string | null>(null);
   const { rows: verschilRows, totaalImpact } = buildVerschilrapport(group.pallets);
+  const { lines: creditLines, totaal: creditTotaal } = buildCreditnota(group.pallets);
 
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-foreground/20 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose}>
@@ -477,6 +512,54 @@ function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; on
               <p className="mt-2 text-xs text-muted-foreground">
                 Geregistreerd op {new Date(group.creditnotaAt).toLocaleString("nl-BE")}
               </p>
+            )}
+          </div>
+
+          {/* Creditnota zoals ze opgemaakt moet worden */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Creditnota-opmaak</h3>
+              <span className="text-xs text-muted-foreground">{group.retournummer}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {group.partijNaam} · {group.partijSub}
+            </p>
+            {creditLines.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Geen te crediteren leeggoed (geen bakken of leeggoedwaarde geconfigureerd).
+              </p>
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="pb-1 font-medium">Omschrijving</th>
+                    <th className="pb-1 text-right font-medium">Bakken</th>
+                    <th className="pb-1 text-right font-medium">Per bak</th>
+                    <th className="pb-1 text-right font-medium">Bedrag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {creditLines.map((l) => (
+                    <tr key={`${l.naam}-${l.perBak}`} className="border-t">
+                      <td className="py-1.5">
+                        {l.naam}
+                        <span className="ml-1 text-xs text-muted-foreground">({l.pallets} pallet{l.pallets > 1 ? "s" : ""})</span>
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums">{l.bakken}</td>
+                      <td className="py-1.5 text-right tabular-nums">{euro(l.perBak)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{euro(l.totaal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t font-semibold">
+                    <td className="py-2" colSpan={3}>
+                      Totaal te crediteren
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{euro(creditTotaal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
             )}
           </div>
 

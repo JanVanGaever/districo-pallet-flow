@@ -224,11 +224,6 @@ export function RetourWizard({
     }
   }
 
-  const legeTotaal = Object.values(legeCounts).reduce((s, n) => s + (n || 0), 0);
-
-  function setLegeCount(id: string, n: number) {
-    setLegeCounts((prev) => ({ ...prev, [id]: Math.max(0, n) }));
-  }
 
   async function addLegePallets() {
     if (aantal > maxToevoegen) {

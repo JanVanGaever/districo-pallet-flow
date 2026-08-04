@@ -25,6 +25,8 @@ const catLabel: Record<string, string> = {
 };
 
 export const MAX_PALLETS = 33;
+// Lege pallets worden gestapeld: max 20 lege pallets op één plaats
+export const LEGE_PER_PLAATS = 20;
 
 const catSlot: Record<string, string> = {
   bier: "bg-warning text-warning-foreground border-warning",

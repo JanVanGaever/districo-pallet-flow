@@ -368,6 +368,44 @@ function Wizard({
   const maxToevoegen =
     soort === "lege_pallet" ? restInStapel + resterend * LEGE_PER_PLAATS : resterend;
 
+  // Slots op de vrachtwagen: gewone pallets = 1 plaats, lege pallets = stapels van 20
+  const slots = useMemo(() => {
+    const res: { cat: string; title: string; badge?: string }[] = [];
+    const legeGroups = new Map<string, { naam: string; count: number }>();
+    for (const p of sortedPallets as any[]) {
+      if (p.soort === "lege_pallet") {
+        const k = p.pallet_type_id ?? "?";
+        const g = legeGroups.get(k) ?? { naam: p.pallet_types?.naam ?? "Pallet", count: 0 };
+        g.count += 1;
+        legeGroups.set(k, g);
+        continue;
+      }
+      const isLeeg = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
+      res.push({
+        cat: p.soort === "mixed" ? "mixed" : isLeeg ? p.soort : p.products?.categorie ?? "",
+        title:
+          p.soort === "mixed"
+            ? `Gemixte pallet (${p.inhoud ?? "—"}) · ${p.pallet_types?.naam}`
+            : isLeeg
+              ? `${p.inhoud ?? catLabel[p.soort]} · ${p.pallet_types?.naam}`
+              : `${p.products?.naam} · ${p.pallet_types?.naam}`,
+      });
+    }
+    for (const g of legeGroups.values()) {
+      const stapels = Math.ceil(g.count / LEGE_PER_PLAATS);
+      for (let s = 0; s < stapels; s++) {
+        const n = Math.min(LEGE_PER_PLAATS, g.count - s * LEGE_PER_PLAATS);
+        res.push({
+          cat: "lege_pallet",
+          title: `Stapel van ${n} lege ${g.naam} (max ${LEGE_PER_PLAATS} per plaats)`,
+          badge: `×${n}`,
+        });
+      }
+    }
+    return res;
+  }, [sortedPallets]);
+
+
   // Group persisted pallets into lines for a compact list
   const lines = useMemo(() => {
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();

@@ -515,6 +515,14 @@ function Wizard({
               <span className="font-semibold">Lege flesjes</span>
               <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
             </button>
+            <button
+              onClick={() => { setSoort("lege_pallet"); setProduct(null); setStep(2); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Truck className="size-5" /></span>
+              <span className="font-semibold">Lege pallets</span>
+              <span className="text-xs text-muted-foreground">Enkel lege pallets — kies type en aantal.</span>
+            </button>
           </div>
         </div>
       )}

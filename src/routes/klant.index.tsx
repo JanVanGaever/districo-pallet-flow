@@ -340,11 +340,33 @@ function Wizard({
     })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
   }, [products, search, catFilter]);
 
-  const totaal = pallets.length;
-  const resterend = MAX_PALLETS - totaal;
-  const maxToevoegen = Math.max(0, resterend);
-
   const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
+
+  // Lege pallets tellen als stapels: 20 lege pallets van hetzelfde type = 1 plaats
+  const legePerType = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of sortedPallets) {
+      if (p.soort === "lege_pallet") {
+        const k = p.pallet_type_id ?? "?";
+        m.set(k, (m.get(k) ?? 0) + 1);
+      }
+    }
+    return m;
+  }, [sortedPallets]);
+
+  const gewonePlaatsen = sortedPallets.filter((p: any) => p.soort !== "lege_pallet").length;
+  const legePlaatsen = Array.from(legePerType.values()).reduce((s, n) => s + Math.ceil(n / LEGE_PER_PLAATS), 0);
+  const totaal = gewonePlaatsen + legePlaatsen;
+  const resterend = Math.max(0, MAX_PALLETS - totaal);
+
+  // Voor lege pallets: resterende ruimte in de huidige stapel + nieuwe stapels
+  const restInStapel = (() => {
+    const n = legePerType.get(palletType?.id ?? "") ?? 0;
+    const rest = n % LEGE_PER_PLAATS;
+    return rest === 0 ? 0 : LEGE_PER_PLAATS - rest;
+  })();
+  const maxToevoegen =
+    soort === "lege_pallet" ? restInStapel + resterend * LEGE_PER_PLAATS : resterend;
 
   // Group persisted pallets into lines for a compact list
   const lines = useMemo(() => {

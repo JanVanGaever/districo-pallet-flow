@@ -479,43 +479,8 @@ export function RetourWizard({
         </div>
       )}
 
-      {/* LEGE PALLETS — aantal per type ingeven */}
-      {soort === "lege_pallet" && (
-        <div className="mt-5">
-          <p className="text-sm font-medium">Lege pallets retourneren</p>
-          <p className="mt-1 text-xs text-muted-foreground">Geef per pallettype het aantal in.</p>
-          <div className="mt-4 space-y-3">
-            {palletTypes.map((t) => {
-              const n = legeCounts[t.id] || 0;
-              return (
-                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <span className="font-medium text-sm">{t.naam}</span>
-                  <div className="flex items-center gap-3">
-                    <Button variant="outline" size="icon" className="size-10" disabled={n <= 0} onClick={() => setLegeCount(t.id, n - 1)}><Minus /></Button>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={n}
-                      onChange={(e) => setLegeCount(t.id, parseInt(e.target.value || "0", 10))}
-                      className="w-16 text-center text-lg font-bold"
-                    />
-                    <Button variant="outline" size="icon" className="size-10" disabled={legeTotaal >= maxToevoegen} onClick={() => setLegeCount(t.id, n + 1)}><Plus /></Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            {legeTotaal} lege pallet(s) gekozen · nog {maxToevoegen} van {MAX_PALLETS} beschikbaar
-          </p>
-          <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={resetWizard}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={addLegePallets} disabled={legeTotaal === 0 || legeTotaal > maxToevoegen || working}>
-              <Plus className="size-4" /> {legeTotaal}× toevoegen aan retour
-            </Button>
-          </div>
-        </div>
-      )}
+
+
 
 
 

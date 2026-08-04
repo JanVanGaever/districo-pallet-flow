@@ -68,10 +68,44 @@ type RetourGroup = {
   laatsteActiviteit: string;
 };
 
-function palletWaarde(p: any) {
-  const aantal = p.gecontroleerd_aantal ?? p.opgegeven_aantal ?? 0;
-  return Number(p.products?.leeggoedwaarde_per_bak ?? 0) * Number(aantal);
+/** Aantal bakken op een volle pallet: geteld bij inname > opgave > configuratie per pallettype. */
+function palletBakken(p: any): number {
+  if (p.gecontroleerd_aantal != null) return Number(p.gecontroleerd_aantal);
+  if (p.opgegeven_aantal != null) return Number(p.opgegeven_aantal);
+  if (p.soort !== "vol" || !p.products) return 0;
+  const isChep = /chep/i.test(p.pallet_types?.naam ?? "");
+  const bakken =
+    (isChep ? p.products.bakken_per_cheppallet : p.products.bakken_per_europallet) ??
+    p.pallet_types?.standaard_bakken ??
+    0;
+  return Number(bakken ?? 0);
 }
+
+function palletWaarde(p: any) {
+  return palletBakken(p) * Number(p.products?.leeggoedwaarde_per_bak ?? 0);
+}
+
+type CreditLine = { naam: string; bakken: number; perBak: number; pallets: number; totaal: number };
+
+/** Creditnota-voorstel: per product samengeteld over alle pallets van de retour. */
+function buildCreditnota(pallets: any[]): { lines: CreditLine[]; totaal: number } {
+  const map = new Map<string, CreditLine>();
+  for (const p of pallets) {
+    const bakken = palletBakken(p);
+    const perBak = Number(p.products?.leeggoedwaarde_per_bak ?? 0);
+    if (!bakken || !perBak) continue;
+    const naam = p.products?.naam ?? p.inhoud ?? "Onbekend product";
+    const key = `${naam}|${perBak}`;
+    const line = map.get(key) ?? { naam, bakken: 0, perBak, pallets: 0, totaal: 0 };
+    line.bakken += bakken;
+    line.pallets += 1;
+    line.totaal += bakken * perBak;
+    map.set(key, line);
+  }
+  const lines = Array.from(map.values()).sort((a, b) => b.totaal - a.totaal);
+  return { lines, totaal: lines.reduce((s, l) => s + l.totaal, 0) };
+}
+
 
 function groupByRetour(rows: any[]): RetourGroup[] {
   const map = new Map<string, RetourGroup>();

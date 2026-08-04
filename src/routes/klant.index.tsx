@@ -693,7 +693,9 @@ function Wizard({
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
               : soort === "mixed"
                 ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
-                : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
+                : soort === "lege_pallet"
+                  ? <>Lege pallets: <span className="font-medium text-foreground">kies type en aantal</span></>
+                  : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
           </p>
           <p className="text-sm font-medium">Pallettype</p>
           <div className="mt-2 grid grid-cols-3 gap-2">

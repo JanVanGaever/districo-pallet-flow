@@ -44,6 +44,8 @@ const catLabel: Record<string, string> = {
 };
 
 const MAX_PALLETS = 33;
+// Lege pallets worden gestapeld: max 20 stuks op één plaats op de vrachtwagen
+const LEGE_PER_PLAATS = 20;
 
 const catSlot: Record<string, string> = {
   bier: "bg-warning text-warning-foreground border-warning",
@@ -338,11 +340,71 @@ function Wizard({
     })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
   }, [products, search, catFilter]);
 
-  const totaal = pallets.length;
-  const resterend = MAX_PALLETS - totaal;
-  const maxToevoegen = Math.max(0, resterend);
-
   const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
+
+  // Lege pallets tellen als stapels: 20 lege pallets van hetzelfde type = 1 plaats
+  const legePerType = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of sortedPallets) {
+      if (p.soort === "lege_pallet") {
+        const k = p.pallet_type_id ?? "?";
+        m.set(k, (m.get(k) ?? 0) + 1);
+      }
+    }
+    return m;
+  }, [sortedPallets]);
+
+  const gewonePlaatsen = sortedPallets.filter((p: any) => p.soort !== "lege_pallet").length;
+  const legePlaatsen = Array.from(legePerType.values()).reduce((s, n) => s + Math.ceil(n / LEGE_PER_PLAATS), 0);
+  const totaal = gewonePlaatsen + legePlaatsen;
+  const resterend = Math.max(0, MAX_PALLETS - totaal);
+
+  // Voor lege pallets: resterende ruimte in de huidige stapel + nieuwe stapels
+  const restInStapel = (() => {
+    const n = legePerType.get(palletType?.id ?? "") ?? 0;
+    const rest = n % LEGE_PER_PLAATS;
+    return rest === 0 ? 0 : LEGE_PER_PLAATS - rest;
+  })();
+  const maxToevoegen =
+    soort === "lege_pallet" ? restInStapel + resterend * LEGE_PER_PLAATS : resterend;
+
+  // Slots op de vrachtwagen: gewone pallets = 1 plaats, lege pallets = stapels van 20
+  const slots = useMemo(() => {
+    const res: { cat: string; title: string; badge?: string }[] = [];
+    const legeGroups = new Map<string, { naam: string; count: number }>();
+    for (const p of sortedPallets as any[]) {
+      if (p.soort === "lege_pallet") {
+        const k = p.pallet_type_id ?? "?";
+        const g = legeGroups.get(k) ?? { naam: p.pallet_types?.naam ?? "Pallet", count: 0 };
+        g.count += 1;
+        legeGroups.set(k, g);
+        continue;
+      }
+      const isLeeg = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
+      res.push({
+        cat: p.soort === "mixed" ? "mixed" : isLeeg ? p.soort : p.products?.categorie ?? "",
+        title:
+          p.soort === "mixed"
+            ? `Gemixte pallet (${p.inhoud ?? "—"}) · ${p.pallet_types?.naam}`
+            : isLeeg
+              ? `${p.inhoud ?? catLabel[p.soort]} · ${p.pallet_types?.naam}`
+              : `${p.products?.naam} · ${p.pallet_types?.naam}`,
+      });
+    }
+    for (const g of legeGroups.values()) {
+      const stapels = Math.ceil(g.count / LEGE_PER_PLAATS);
+      for (let s = 0; s < stapels; s++) {
+        const n = Math.min(LEGE_PER_PLAATS, g.count - s * LEGE_PER_PLAATS);
+        res.push({
+          cat: "lege_pallet",
+          title: `Stapel van ${n} lege ${g.naam} (max ${LEGE_PER_PLAATS} per plaats)`,
+          badge: `×${n}`,
+        });
+      }
+    }
+    return res;
+  }, [sortedPallets]);
+
 
   // Group persisted pallets into lines for a compact list
   const lines = useMemo(() => {
@@ -380,7 +442,7 @@ function Wizard({
   async function addLine() {
     if (!product) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -408,7 +470,7 @@ function Wizard({
       return;
     }
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -429,7 +491,7 @@ function Wizard({
   async function addLeeg() {
     if (!isLeeg) return;
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -451,7 +513,7 @@ function Wizard({
   }
   async function addLegePallets() {
     if (aantal > maxToevoegen) {
-      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      toast.error(`Maximaal ${MAX_PALLETS} plaatsen per vrachtwagen`);
       return;
     }
     setWorking(true);
@@ -733,7 +795,7 @@ function Wizard({
               <Plus />
             </Button>
             <div className="ml-1 flex flex-wrap gap-1.5">
-              {[1, 2, 5, 10].filter((n) => n <= maxToevoegen).map((n) => (
+              {(soort === "lege_pallet" ? [5, 10, 20, 40] : [1, 2, 5, 10]).filter((n) => n <= maxToevoegen).map((n) => (
                 <button
                   key={n}
                   type="button"
@@ -745,12 +807,20 @@ function Wizard({
               ))}
             </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
+          {soort === "lege_pallet" ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Lege pallets worden gestapeld: max {LEGE_PER_PLAATS} per plaats op de vrachtwagen. Deze {aantal} pallets nemen{" "}
+              {Math.max(0, Math.ceil((aantal - restInStapel) / LEGE_PER_PLAATS))} extra plaats(en) in — nog {resterend} van {MAX_PALLETS} plaatsen vrij.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} plaatsen beschikbaar</p>
+          )}
           {soort === "vol" && palletType.standaard_bakken != null && (
             <p className="mt-1 text-xs text-muted-foreground">
               ≈ {aantal * palletType.standaard_bakken} bakken ({palletType.standaard_bakken}/pallet × {aantal})
             </p>
           )}
+
 
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => (soort === "lege_pallet" ? resetWizard() : setStep(1))}><ArrowLeft className="size-4" /> Terug</Button>
@@ -768,7 +838,7 @@ function Wizard({
           <p className="text-sm font-semibold">Overzicht retour</p>
           <p className="text-sm font-semibold tabular-nums">
             <span className={totaal >= MAX_PALLETS ? "text-warning" : "text-foreground"}>{totaal}</span>
-            <span className="text-muted-foreground"> / {MAX_PALLETS} pallets</span>
+            <span className="text-muted-foreground"> / {MAX_PALLETS} plaatsen</span>
           </p>
         </div>
 
@@ -777,32 +847,25 @@ function Wizard({
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(totaal / MAX_PALLETS) * 100}%` }} />
         </div>
 
-        {/* Visueel rooster van 33 plekken */}
+        {/* Visueel rooster van 33 plaatsen op de vrachtwagen */}
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
-            const slot = sortedPallets[i];
-            const slotLeeg = slot && (slot.soort === "lege_bakken" || slot.soort === "lege_flesjes");
-            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
-            const slotTitle = slot
-              ? slot.soort === "mixed"
-                ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
-                : slotLeeg
-                  ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
-                  : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
-              : `Plek ${i + 1} vrij`;
+            const slot = slots[i];
             return (
               <div
                 key={i}
-                title={slotTitle}
-                className={`flex aspect-square items-center justify-center rounded-md border text-[10px] font-semibold ${
-                  slot ? catSlot[slotCat] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
+                title={slot ? `${i + 1}. ${slot.title}` : `Plek ${i + 1} vrij`}
+                className={`flex aspect-square flex-col items-center justify-center rounded-md border text-[10px] font-semibold leading-tight ${
+                  slot ? catSlot[slot.cat] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
                 }`}
               >
                 {i + 1}
+                {slot?.badge && <span className="text-[9px] font-normal opacity-80">{slot.badge}</span>}
               </div>
             );
           })}
         </div>
+
 
         {/* Legenda */}
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">

@@ -801,32 +801,25 @@ function Wizard({
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(totaal / MAX_PALLETS) * 100}%` }} />
         </div>
 
-        {/* Visueel rooster van 33 plekken */}
+        {/* Visueel rooster van 33 plaatsen op de vrachtwagen */}
         <div className="mt-4 grid grid-cols-11 gap-1.5">
           {Array.from({ length: MAX_PALLETS }).map((_, i) => {
-            const slot = sortedPallets[i];
-            const slotLeeg = slot && (slot.soort === "lege_bakken" || slot.soort === "lege_flesjes");
-            const slotCat = slot ? (slot.soort === "mixed" ? "mixed" : slotLeeg ? slot.soort : slot.products?.categorie) : null;
-            const slotTitle = slot
-              ? slot.soort === "mixed"
-                ? `${i + 1}. Gemixte pallet (${slot.inhoud ?? "—"}) · ${slot.pallet_types?.naam}`
-                : slotLeeg
-                  ? `${i + 1}. ${slot.inhoud ?? catLabel[slot.soort]} · ${slot.pallet_types?.naam}`
-                  : `${i + 1}. ${slot.products?.naam} · ${slot.pallet_types?.naam}`
-              : `Plek ${i + 1} vrij`;
+            const slot = slots[i];
             return (
               <div
                 key={i}
-                title={slotTitle}
-                className={`flex aspect-square items-center justify-center rounded-md border text-[10px] font-semibold ${
-                  slot ? catSlot[slotCat] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
+                title={slot ? `${i + 1}. ${slot.title}` : `Plek ${i + 1} vrij`}
+                className={`flex aspect-square flex-col items-center justify-center rounded-md border text-[10px] font-semibold leading-tight ${
+                  slot ? catSlot[slot.cat] ?? "bg-primary text-primary-foreground border-primary" : "border-dashed border-muted-foreground/30 text-muted-foreground/40"
                 }`}
               >
                 {i + 1}
+                {slot?.badge && <span className="text-[9px] font-normal opacity-80">{slot.badge}</span>}
               </div>
             );
           })}
         </div>
+
 
         {/* Legenda */}
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">

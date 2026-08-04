@@ -443,6 +443,23 @@ function Wizard({
       setWorking(false);
     }
   }
+  async function addLegePallets() {
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      await addLegePalletsToRetour(retourId, customer.klantnummer, [{ palletType, aantal }]);
+      onChange();
+      toast.success(`${aantal}× lege ${palletType.naam} toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
 
 
 

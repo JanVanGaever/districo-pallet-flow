@@ -430,8 +430,8 @@ function RetourDetailPanel({ group, onClose, onSaved }: { group: RetourGroup; on
   const { rows: verschilRows, totaalImpact } = buildVerschilrapport(group.pallets);
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-black/40" onClick={onClose}>
-      <aside className="h-full w-full max-w-lg overflow-y-auto bg-background shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-20 flex justify-end bg-foreground/20 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose}>
+      <aside className="h-full w-full max-w-xl overflow-y-auto border-l bg-background shadow-2xl animate-in slide-in-from-right duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-5 py-4">
           <div>
             <p className="font-semibold">{group.retournummer}</p>
@@ -575,8 +575,8 @@ function DetailPanel({ palletId, onClose }: { palletId: string; onClose: () => v
   const { data } = useQuery({ queryKey: ["detail", palletId], queryFn: () => fetchDetail(palletId) });
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-black/40" onClick={onClose}>
-      <aside className="h-full w-full max-w-lg overflow-y-auto bg-background shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-30 flex justify-end bg-foreground/20 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose}>
+      <aside className="h-full w-full max-w-xl overflow-y-auto border-l bg-background shadow-2xl animate-in slide-in-from-right duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 flex items-center justify-between border-b bg-card px-5 py-4">
           <p className="font-semibold">{data?.pallet?.palletnummer ?? "Laden…"}</p>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">

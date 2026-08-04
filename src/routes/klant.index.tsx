@@ -16,6 +16,7 @@ import {
   addLineToRetour,
   addMixedPalletToRetour,
   addLeeggoedPalletToRetour,
+  addLegePalletsToRetour,
   removePalletFromRetour,
   deleteConceptRetour,
   submitRetour,
@@ -23,7 +24,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Beer, Box, Settings } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Beer, Box, Settings, Truck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/klant/")({
@@ -39,6 +40,7 @@ const catLabel: Record<string, string> = {
   mixed: "Gemixt",
   lege_bakken: "Lege bakken",
   lege_flesjes: "Lege flesjes",
+  lege_pallet: "Lege pallets",
 };
 
 const MAX_PALLETS = 33;
@@ -50,7 +52,9 @@ const catSlot: Record<string, string> = {
   mixed: "bg-secondary text-secondary-foreground border-secondary",
   lege_bakken: "bg-muted-foreground text-background border-muted-foreground",
   lege_flesjes: "bg-accent-foreground text-accent border-accent-foreground",
+  lege_pallet: "bg-muted text-muted-foreground border-muted-foreground",
 };
+
 
 
 function KlantPage() {
@@ -283,9 +287,9 @@ function Wizard({
   onDiscard: () => void;
   busy: boolean;
 }) {
-  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | null>(null);
+  const [soort, setSoort] = useState<"vol" | "mixed" | "lege_bakken" | "lege_flesjes" | "lege_pallet" | null>(null);
   const isLeeg = soort === "lege_bakken" || soort === "lege_flesjes";
-  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
+  const soortLabel = soort === "vol" ? "Volle pallet" : soort === "mixed" ? "Gemixte pallet" : soort === "lege_bakken" ? "Lege bakken" : soort === "lege_pallet" ? "Lege pallets" : "Lege flesjes";
   const [step, setStep] = useState(1);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -345,21 +349,24 @@ function Wizard({
     const map = new Map<string, { naam: string; categorie: string; type: string; soort: string; inhoud: string | null; ids: string[] }>();
     for (const p of sortedPallets) {
       const isMixed = p.soort === "mixed";
+      const isLegePal = p.soort === "lege_pallet";
       const isLeegP = p.soort === "lege_bakken" || p.soort === "lege_flesjes";
       const key = isMixed
         ? `mixed|${p.inhoud}|${p.pallet_type_id}`
-        : isLeegP
-          ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
-          : `${p.product_id}|${p.pallet_type_id}`;
+        : isLegePal
+          ? `lege_pallet|${p.pallet_type_id}`
+          : isLeegP
+            ? `${p.soort}|${p.product_id}|${p.pallet_type_id}`
+            : `${p.product_id}|${p.pallet_type_id}`;
       let g = map.get(key);
       if (!g) {
         const leegNaam = p.soort === "lege_bakken" ? "Lege bakken" : "Lege flesjes";
         g = {
-          naam: isMixed ? "Gemixte pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
-          categorie: isMixed ? "mixed" : isLeegP ? p.soort : p.products?.categorie ?? "",
+          naam: isMixed ? "Gemixte pallet" : isLegePal ? "Lege pallet" : isLeegP ? leegNaam : p.products?.naam ?? "?",
+          categorie: isMixed ? "mixed" : isLegePal ? "lege_pallet" : isLeegP ? p.soort : p.products?.categorie ?? "",
           type: p.pallet_types?.naam ?? "",
           soort: p.soort ?? "vol",
-          inhoud: isLeegP && p.products?.naam ? p.products.naam : p.inhoud ?? null,
+          inhoud: isLegePal ? null : isLeegP && p.products?.naam ? p.products.naam : p.inhoud ?? null,
           ids: [],
         };
         map.set(key, g);
@@ -442,6 +449,23 @@ function Wizard({
       setWorking(false);
     }
   }
+  async function addLegePallets() {
+    if (aantal > maxToevoegen) {
+      toast.error(`Maximaal ${MAX_PALLETS} pallets per retour`);
+      return;
+    }
+    setWorking(true);
+    try {
+      await addLegePalletsToRetour(retourId, customer.klantnummer, [{ palletType, aantal }]);
+      onChange();
+      toast.success(`${aantal}× lege ${palletType.naam} toegevoegd`);
+      resetWizard();
+    } catch (e: any) {
+      toast.error("Er ging iets mis: " + e.message);
+    } finally {
+      setWorking(false);
+    }
+  }
 
 
 
@@ -514,6 +538,14 @@ function Wizard({
               <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Beer className="size-5" /></span>
               <span className="font-semibold">Lege flesjes</span>
               <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
+            </button>
+            <button
+              onClick={() => { setSoort("lege_pallet"); setProduct(null); setStep(2); }}
+              className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Truck className="size-5" /></span>
+              <span className="font-semibold">Lege pallets</span>
+              <span className="text-xs text-muted-foreground">Enkel lege pallets — kies type en aantal.</span>
             </button>
           </div>
         </div>
@@ -667,7 +699,9 @@ function Wizard({
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
               : soort === "mixed"
                 ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
-                : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
+                : soort === "lege_pallet"
+                  ? <>Lege pallets: <span className="font-medium text-foreground">kies type en aantal</span></>
+                  : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}
           </p>
           <p className="text-sm font-medium">Pallettype</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -719,8 +753,9 @@ function Wizard({
           )}
 
           <div className="mt-5 flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="size-4" /> Terug</Button>
-            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : addLeeg} disabled={maxToevoegen === 0 || working}>
+            <Button variant="outline" onClick={() => (soort === "lege_pallet" ? resetWizard() : setStep(1))}><ArrowLeft className="size-4" /> Terug</Button>
+            <Button onClick={soort === "vol" ? addLine : soort === "mixed" ? addMixed : soort === "lege_pallet" ? addLegePallets : addLeeg} disabled={maxToevoegen === 0 || working}>
+
               <Plus className="size-4" /> {aantal}× toevoegen aan retour
             </Button>
           </div>

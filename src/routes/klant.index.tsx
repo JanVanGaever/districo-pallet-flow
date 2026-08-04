@@ -795,7 +795,7 @@ function Wizard({
               <Plus />
             </Button>
             <div className="ml-1 flex flex-wrap gap-1.5">
-              {[1, 2, 5, 10].filter((n) => n <= maxToevoegen).map((n) => (
+              {(soort === "lege_pallet" ? [5, 10, 20, 40] : [1, 2, 5, 10]).filter((n) => n <= maxToevoegen).map((n) => (
                 <button
                   key={n}
                   type="button"
@@ -807,12 +807,20 @@ function Wizard({
               ))}
             </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} pallets beschikbaar</p>
+          {soort === "lege_pallet" ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Lege pallets worden gestapeld: max {LEGE_PER_PLAATS} per plaats op de vrachtwagen. Deze {aantal} pallets nemen{" "}
+              {Math.max(0, Math.ceil((aantal - restInStapel) / LEGE_PER_PLAATS))} extra plaats(en) in — nog {resterend} van {MAX_PALLETS} plaatsen vrij.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">Nog {maxToevoegen} van {MAX_PALLETS} plaatsen beschikbaar</p>
+          )}
           {soort === "vol" && palletType.standaard_bakken != null && (
             <p className="mt-1 text-xs text-muted-foreground">
               ≈ {aantal * palletType.standaard_bakken} bakken ({palletType.standaard_bakken}/pallet × {aantal})
             </p>
           )}
+
 
           <div className="mt-5 flex gap-2">
             <Button variant="outline" onClick={() => (soort === "lege_pallet" ? resetWizard() : setStep(1))}><ArrowLeft className="size-4" /> Terug</Button>

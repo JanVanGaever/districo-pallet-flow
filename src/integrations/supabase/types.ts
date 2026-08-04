@@ -295,6 +295,8 @@ export type Database = {
       retours: {
         Row: {
           created_at: string
+          creditnota_at: string | null
+          creditnota_nummer: string | null
           customer_id: string | null
           id: string
           leverancier_id: string | null
@@ -304,6 +306,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creditnota_at?: string | null
+          creditnota_nummer?: string | null
           customer_id?: string | null
           id?: string
           leverancier_id?: string | null
@@ -313,6 +317,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creditnota_at?: string | null
+          creditnota_nummer?: string | null
           customer_id?: string | null
           id?: string
           leverancier_id?: string | null

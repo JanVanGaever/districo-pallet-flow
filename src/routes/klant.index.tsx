@@ -817,7 +817,7 @@ function Wizard({
           )}
           <div className="mt-4 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{mixSelected.length} product(en) gekozen</p>
-            <Button onClick={() => setStep(2)} disabled={mixSelected.length < 2 || mixTotaalBakken === 0}>Verder</Button>
+            <Button onClick={addMixed} disabled={mixSelected.length < 2 || mixTotaalBakken === 0 || working}>Toevoegen aan retour</Button>
           </div>
         </div>
       )}

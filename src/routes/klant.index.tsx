@@ -297,6 +297,7 @@ function Wizard({
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [mixSelected, setMixSelected] = useState<Product[]>([]);
+  const [mixQty, setMixQty] = useState<Record<string, number>>({});
   const defaultType = palletTypes.find((t) => t.naam === "Europallet") ?? palletTypes[0];
   const [palletType, setPalletType] = useState<PalletType>(defaultType);
   const [aantal, setAantal] = useState(1);
@@ -307,6 +308,7 @@ function Wizard({
     setStep(1);
     setProduct(null);
     setMixSelected([]);
+    setMixQty({});
     setPalletType(defaultType);
     setAantal(1);
     setSearch("");
@@ -459,14 +461,44 @@ function Wizard({
   }
 
   function toggleMix(p: Product) {
-    setMixSelected((prev) =>
-      prev.some((x) => x.id === p.id) ? prev.filter((x) => x.id !== p.id) : [...prev, p],
-    );
+    setMixSelected((prev) => {
+      const has = prev.some((x) => x.id === p.id);
+      if (has) {
+        setMixQty((q) => {
+          const { [p.id]: _drop, ...rest } = q;
+          return rest;
+        });
+        return prev.filter((x) => x.id !== p.id);
+      }
+      setMixQty((q) => ({ ...q, [p.id]: q[p.id] ?? 1 }));
+      return [...prev, p];
+    });
   }
+
+  function setMixBakken(p: Product, n: number) {
+    const val = Math.max(0, Math.min(99, Math.round(n || 0)));
+    if (val === 0) {
+      setMixSelected((prev) => prev.filter((x) => x.id !== p.id));
+      setMixQty((q) => {
+        const { [p.id]: _drop, ...rest } = q;
+        return rest;
+      });
+      return;
+    }
+    setMixQty((q) => ({ ...q, [p.id]: val }));
+  }
+
+  const mixTotaalBakken = mixSelected.reduce((s, p) => s + (mixQty[p.id] ?? 0), 0);
+  const mixOmschrijving = mixSelected.map((p) => `${mixQty[p.id] ?? 0}× ${p.naam}`).join(", ");
+  const mixWaarde = mixSelected.reduce((s, p) => s + (mixQty[p.id] ?? 0) * (p.leeggoedwaarde_per_bak ?? 0), 0);
 
   async function addMixed() {
     if (mixSelected.length < 2) {
       toast.error("Kies minstens 2 producten voor een gemixte pallet");
+      return;
+    }
+    if (mixTotaalBakken === 0) {
+      toast.error("Geef het aantal bakken per product in");
       return;
     }
     if (aantal > maxToevoegen) {
@@ -475,7 +507,7 @@ function Wizard({
     }
     setWorking(true);
     try {
-      const inhoud = mixSelected.map((p) => p.naam).join(", ");
+      const inhoud = mixOmschrijving;
       await addMixedPalletToRetour(retourId, customer.klantnummer, { palletType, aantal, inhoud });
       onChange();
       toast.success(`${aantal}× gemixte pallet toegevoegd`);
@@ -729,26 +761,63 @@ function Wizard({
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => {
                   const sel = mixSelected.some((x) => x.id === p.id);
+                  const n = mixQty[p.id] ?? 0;
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      onClick={() => toggleMix(p)}
-                      className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors hover:border-primary ${sel ? "border-primary bg-accent/40" : ""}`}
+                      className={`rounded-lg border p-3 transition-colors ${sel ? "border-primary bg-accent/40" : "hover:border-primary"}`}
                     >
-                      <span>
+                      <button type="button" onClick={() => toggleMix(p)} className="block w-full text-left">
                         <span className="block font-medium text-sm">{p.naam}</span>
                         <span className="block text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</span>
-                      </span>
-                      {sel && <Check className="size-4 text-primary" />}
-                    </button>
+                      </button>
+                      {sel ? (
+                        <div className="mt-2 flex items-center gap-1">
+                          <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n - 1)}>−</Button>
+                          <Input
+                            className="h-7 w-14 text-center"
+                            inputMode="numeric"
+                            value={n}
+                            onChange={(e) => setMixBakken(p, Number(e.target.value.replace(/\D/g, "")))}
+                          />
+                          <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n + 1)}>+</Button>
+                          <span className="ml-1 text-xs text-muted-foreground">bakken</span>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-muted-foreground">Tik om toe te voegen</p>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             </div>
           ))}
+          {mixSelected.length > 0 && (
+            <div className="sticky bottom-0 mt-4 rounded-lg border bg-card p-3 shadow-lg">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Op deze pallet</p>
+              <ul className="mt-2 space-y-1.5">
+                {mixSelected.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">
+                      <span className="font-medium tabular-nums">{mixQty[p.id] ?? 0}×</span> {p.naam}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, (mixQty[p.id] ?? 0) - 1)}>−</Button>
+                      <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, (mixQty[p.id] ?? 0) + 1)}>+</Button>
+                      <Button type="button" variant="ghost" size="icon" className="size-7 text-muted-foreground" onClick={() => toggleMix(p)}>×</Button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2 flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
+                <span>{mixSelected.length} product(en) · {mixTotaalBakken} bakken</span>
+                <span>≈ €{mixWaarde.toFixed(2)} leeggoedwaarde</span>
+              </div>
+            </div>
+          )}
           <div className="mt-4 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{mixSelected.length} product(en) gekozen</p>
-            <Button onClick={() => setStep(2)} disabled={mixSelected.length < 2}>Verder</Button>
+            <Button onClick={() => setStep(2)} disabled={mixSelected.length < 2 || mixTotaalBakken === 0}>Verder</Button>
           </div>
         </div>
       )}
@@ -760,7 +829,7 @@ function Wizard({
             {soort === "vol"
               ? <>Gekozen: <span className="font-medium text-foreground">{product?.naam}</span></>
               : soort === "mixed"
-                ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixSelected.map((p) => p.naam).join(", ")}</span></>
+                ? <>Gemixte pallet: <span className="font-medium text-foreground">{mixOmschrijving}</span> · {mixTotaalBakken} bakken</>
                 : soort === "lege_pallet"
                   ? <>Lege pallets: <span className="font-medium text-foreground">kies type en aantal</span></>
                   : <>{soortLabel}: <span className="font-medium text-foreground">{product?.naam ?? "geen specifiek merk"}</span></>}

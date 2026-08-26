@@ -11,7 +11,7 @@ import {
 } from "@/lib/districo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Beer, Box, Truck } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Box, Truck } from "lucide-react";
 import { toast } from "sonner";
 
 const catLabel: Record<string, string> = {

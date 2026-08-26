@@ -24,7 +24,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Beer, Box, Settings, Truck } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Box, Settings, Truck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/klant/")({

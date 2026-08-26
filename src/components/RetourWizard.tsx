@@ -396,14 +396,6 @@ export function RetourWizard({
                   <span className="font-semibold">Lege bakken</span>
                   <span className="text-xs text-muted-foreground">Bakken zonder flesjes — optioneel per merk.</span>
                 </button>
-                <button
-                  onClick={() => { setSoort("lege_flesjes"); setStep(1); setProduct(null); }}
-                  className="flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-accent/30"
-                >
-                  <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Beer className="size-5" /></span>
-                  <span className="font-semibold">Lege flesjes</span>
-                  <span className="text-xs text-muted-foreground">Flesjes zonder bak — optioneel per merk.</span>
-                </button>
               </>
             )}
             <button
@@ -725,9 +717,6 @@ export function RetourWizard({
             <>
               <span className="flex items-center gap-1.5">
                 <span className={`inline-block size-3 rounded ${catSlot.lege_bakken}`} /> Lege bakken
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className={`inline-block size-3 rounded ${catSlot.lege_flesjes}`} /> Lege flesjes
               </span>
             </>
           )}

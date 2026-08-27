@@ -129,5 +129,7 @@ export function groupProducts(products: Product[], search: string, catFilter: st
     .sort((a, b) => a.naam.localeCompare(b.naam));
   if (!catFilter && others.length) groups.push({ cat: "andere", items: others });
 
-  return catFilter || favGroup.length === 0 ? groups : [{ cat: FAV, items: favGroup }, ...groups];
+  // Favorieten altijd bovenaan — ook wanneer er op een categorie gefilterd is
+  const favInScope = catFilter ? favGroup.filter((p) => p.categorie === catFilter) : favGroup;
+  return favInScope.length ? [{ cat: FAV, items: favInScope }, ...groups] : groups;
 }

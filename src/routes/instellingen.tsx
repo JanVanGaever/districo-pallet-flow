@@ -17,7 +17,10 @@ import {
   Pencil,
   Check,
   X,
+  Users,
+  Upload,
 } from "lucide-react";
+import { parseCustomerFile, importCustomers, type ParsedCustomer } from "@/lib/customers-import";
 
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -140,6 +143,8 @@ function Instellingen() {
           </div>
         </div>
 
+        <LedenlijstImport />
+
         <VoertuigenConfig />
 
 
@@ -184,6 +189,101 @@ function Instellingen() {
         </section>
       </main>
     </div>
+  );
+}
+
+function LedenlijstImport() {
+  const qc = useQueryClient();
+  const [rows, setRows] = useState<ParsedCustomer[] | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    try {
+      const parsed = await parseCustomerFile(file);
+      if (parsed.length === 0) {
+        toast.error("Geen klanten gevonden. Verwacht kolommen zoals LID en NAAM.");
+        setRows(null);
+        return;
+      }
+      setRows(parsed);
+      toast.success(`${parsed.length} klanten gevonden in het bestand`);
+    } catch (err: any) {
+      toast.error("Kon bestand niet lezen: " + err.message);
+    } finally {
+      e.target.value = "";
+    }
+  }
+
+  async function doImport() {
+    if (!rows) return;
+    setBusy(true);
+    try {
+      const res = await importCustomers(rows);
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      toast.success(`${res.inserted} toegevoegd, ${res.updated} bijgewerkt`);
+      setRows(null);
+      setFileName("");
+    } catch (err: any) {
+      toast.error("Import mislukt: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-8 rounded-xl border bg-card p-6">
+      <div className="flex items-center gap-3">
+        <div className="size-9 rounded-lg bg-primary/10 text-primary grid place-items-center">
+          <Users className="size-5" />
+        </div>
+        <h2 className="font-semibold">Ledenlijst klanten importeren</h2>
+      </div>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Upload een XLSX-bestand met de ledenlijst (kolommen LID en NAAM, optioneel PLAATS).
+        Bestaande klanten worden bijgewerkt op klantnummer — er komen geen dubbels bij.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent">
+          <Upload className="size-4" />
+          Bestand kiezen
+          <input type="file" accept=".xlsx,.xls,.ods,.csv" className="hidden" onChange={onFile} />
+        </label>
+        {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
+        {rows && (
+          <Button onClick={doImport} disabled={busy}>
+            {busy ? "Bezig…" : `Importeer ${rows.length} klanten`}
+          </Button>
+        )}
+      </div>
+
+      {rows && (
+        <div className="mt-4 max-h-72 overflow-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/60">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Klantnummer</th>
+                <th className="px-3 py-2 text-left font-medium">Naam</th>
+                <th className="px-3 py-2 text-left font-medium">Plaats</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.klantnummer} className="border-t">
+                  <td className="px-3 py-1.5 tabular-nums">{r.klantnummer}</td>
+                  <td className="px-3 py-1.5">{r.naam}</td>
+                  <td className="px-3 py-1.5 text-muted-foreground">{r.plaats || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

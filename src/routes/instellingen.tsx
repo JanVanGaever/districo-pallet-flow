@@ -140,6 +140,8 @@ function Instellingen() {
           </div>
         </div>
 
+        <LedenlijstImport />
+
         <VoertuigenConfig />
 
 

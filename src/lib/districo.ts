@@ -14,7 +14,13 @@ export type Product = {
   inhoud: string | null;
   verpakkingstype: string | null;
   leeggoedwaarde_per_bak: number;
+  favoriet?: boolean | null;
 };
+
+export async function setProductFavoriet(id: string, favoriet: boolean) {
+  const { error } = await supabase.from("products").update({ favoriet } as any).eq("id", id);
+  if (error) throw error;
+}
 
 export type PalletType = {
   id: string;

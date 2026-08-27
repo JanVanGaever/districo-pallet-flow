@@ -15,6 +15,7 @@ export type Product = {
   verpakkingstype: string | null;
   leeggoedwaarde_per_bak: number;
   favoriet?: boolean | null;
+  code?: string | null;
 };
 
 export async function setProductFavoriet(id: string, favoriet: boolean) {

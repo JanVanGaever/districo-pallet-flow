@@ -17,7 +17,10 @@ import {
   Pencil,
   Check,
   X,
+  Users,
+  Upload,
 } from "lucide-react";
+import { parseCustomerFile, importCustomers, type ParsedCustomer } from "@/lib/customers-import";
 
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CATEGORIES,
   Product,
@@ -13,8 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus, Trash2, Check, ArrowLeft, Package, Layers, Boxes, Box, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { CatChips, FavStar, groupProducts, pickerCatLabel } from "@/components/ProductFilters";
 
 const catLabel: Record<string, string> = {
+  fav: "Favorieten",
   bier: "Bier",
   water: "Water",
   frisdrank: "Limonade",
@@ -93,31 +96,10 @@ export function RetourWizard({
     setCatFilter(null);
   }
 
-  const grouped = useMemo(() => {
-    const q = search.toLowerCase();
-    const POPULAR: Record<string, string[]> = {
-      bier: ["jupiler", "maes", "cristal", "leffe", "duvel", "liefmans"],
-      water: ["spa reine", "spa bruisend", "san pelegrino", "chaudfontaine plat", "chaudfontaine bruisend", "eulala"],
-    };
-    const rank = (cat: string, naam: string) => {
-      const list = POPULAR[cat];
-      if (!list) return Infinity;
-      const n = naam.toLowerCase();
-      const idx = list.findIndex((k) => n.includes(k));
-      return idx === -1 ? Infinity : idx;
-    };
-    return CATEGORIES.map((cat) => ({
-      cat,
-      items: products
-        .filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q))
-        .sort((a, b) => {
-          const ra = rank(cat, a.naam);
-          const rb = rank(cat, b.naam);
-          if (ra !== rb) return ra - rb;
-          return a.naam.localeCompare(b.naam);
-        }),
-    })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
-  }, [products, search, catFilter]);
+  const favQc = useQueryClient();
+  const onProductsChanged = () => favQc.invalidateQueries({ queryKey: ["products"] });
+  const grouped = useMemo(() => groupProducts(products, search, catFilter), [products, search, catFilter]);
+  const favCount = useMemo(() => products.filter((p) => p.favoriet).length, [products]);
 
   const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
 
@@ -414,35 +396,22 @@ export function RetourWizard({
       {soort === "vol" && step === 1 && (
         <div className="mt-5">
           <Input placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => { setProduct(p); setStep(2); }}
-                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                    className={`flex items-start gap-1 rounded-lg border p-3 transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
                   >
-                    <p className="font-medium text-sm">{p.naam}{p.inhoud ? ` · ${p.inhoud}` : ""}</p>
-                    <p className="text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</p>
-                  </button>
+                    <button onClick={() => { setProduct(p); setStep(2); }} className="min-w-0 flex-1 text-left">
+                      <p className="font-medium text-sm">{p.naam}{p.inhoud ? ` · ${p.inhoud}` : ""}</p>
+                      <p className="text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</p>
+                    </button>
+                    <FavStar product={p} onChange={onProductsChanged} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -463,34 +432,21 @@ export function RetourWizard({
             </Button>
           </div>
           <Input className="mt-4" placeholder="Zoek merk/product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => { setProduct(p); setStep(2); }}
-                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                    className={`flex items-start gap-1 rounded-lg border p-3 transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
                   >
-                    <p className="font-medium text-sm">{p.naam}</p>
-                  </button>
+                    <button onClick={() => { setProduct(p); setStep(2); }} className="min-w-0 flex-1 text-left">
+                      <p className="font-medium text-sm">{p.naam}</p>
+                    </button>
+                    <FavStar product={p} onChange={onProductsChanged} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -503,25 +459,10 @@ export function RetourWizard({
         <div className="mt-5">
           <p className="text-sm font-medium">Kies de producten op deze pallet</p>
           <Input className="mt-2" placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => {
                   const sel = mixSelected.some((x) => x.id === p.id);
@@ -531,10 +472,13 @@ export function RetourWizard({
                       key={p.id}
                       className={`rounded-lg border p-3 transition-colors ${sel ? "border-primary bg-accent/40" : "hover:border-primary"}`}
                     >
-                      <button type="button" onClick={() => toggleMix(p)} className="block w-full text-left">
-                        <span className="block font-medium text-sm">{p.naam}</span>
-                        <span className="block text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</span>
-                      </button>
+                      <div className="flex items-start gap-1">
+                        <button type="button" onClick={() => toggleMix(p)} className="min-w-0 flex-1 text-left">
+                          <span className="block font-medium text-sm">{p.naam}</span>
+                          <span className="block text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</span>
+                        </button>
+                        <FavStar product={p} onChange={onProductsChanged} />
+                      </div>
                       {sel ? (
                         <div className="mt-2 flex items-center gap-1">
                           <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n - 1)}>−</Button>

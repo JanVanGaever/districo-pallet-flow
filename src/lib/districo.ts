@@ -85,6 +85,7 @@ export async function fetchProducts(): Promise<Product[]> {
       .from("products")
       .select("*")
       .order("naam")
+      .order("id")
       .range(from, from + PAGE - 1);
     if (error) throw error;
     const rows = (data ?? []) as Product[];

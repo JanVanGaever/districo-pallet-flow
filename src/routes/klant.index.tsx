@@ -317,6 +317,8 @@ function Wizard({
     setCatFilter(null);
   }
 
+  const favQc = useQueryClient();
+  const onProductsChanged = () => favQc.invalidateQueries({ queryKey: ["products"] });
   const grouped = useMemo(() => groupProducts(products, search, catFilter), [products, search, catFilter]);
   const favCount = useMemo(() => products.filter((p) => p.favoriet).length, [products]);
 

@@ -76,10 +76,23 @@ export async function fetchCustomers(): Promise<Customer[]> {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  const { data, error } = await supabase.from("products").select("*").order("naam");
-  if (error) throw error;
-  return (data as Product[]).map((p) => ({ ...p, leeggoedwaarde_per_bak: Number(p.leeggoedwaarde_per_bak) }));
+  // PostgREST geeft standaard max 1000 rijen terug -> pagineren
+  const PAGE = 1000;
+  const all: Product[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("naam")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as Product[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return all.map((p) => ({ ...p, leeggoedwaarde_per_bak: Number(p.leeggoedwaarde_per_bak) }));
 }
+
 
 export async function fetchPalletTypes(): Promise<PalletType[]> {
   const { data, error } = await supabase.from("pallet_types").select("*").order("naam");

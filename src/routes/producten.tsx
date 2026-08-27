@@ -63,7 +63,7 @@ function ProductenImport() {
     try {
       const products = await parseProductFile(file);
       if (products.length === 0) {
-        toast.error("Geen producten gevonden. Controleer of het bestand een kolom 'Productnaam' en 'Product ID' heeft.");
+        toast.error("Geen producten gevonden. Verwacht kolommen 'Product ID'/'Productnaam', of een leeggoedlijst met 'Artikel', 'Benaming' en 'Lg'.");
         return;
       }
       setParsed(products);

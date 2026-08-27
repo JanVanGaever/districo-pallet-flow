@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Box, Settings, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { CatChips, FavStar, groupProducts, pickerCatLabel } from "@/components/ProductFilters";
 
 export const Route = createFileRoute("/klant/")({
   ssr: false,
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/klant/")({
 });
 
 const catLabel: Record<string, string> = {
+  fav: "Favorieten",
   bier: "Bier",
   water: "Water",
   frisdrank: "Limonade",
@@ -315,32 +317,8 @@ function Wizard({
     setCatFilter(null);
   }
 
-  const grouped = useMemo(() => {
-    const q = search.toLowerCase();
-    // Meest populaire producten per categorie (bovenaan, in deze volgorde)
-    const POPULAR: Record<string, string[]> = {
-      bier: ["jupiler", "maes", "cristal", "leffe", "duvel", "liefmans"],
-      water: ["spa reine", "spa bruisend", "san pelegrino", "chaudfontaine plat", "chaudfontaine bruisend", "eulala"],
-    };
-    const rank = (cat: string, naam: string) => {
-      const list = POPULAR[cat];
-      if (!list) return Infinity;
-      const n = naam.toLowerCase();
-      const idx = list.findIndex((k) => n.includes(k));
-      return idx === -1 ? Infinity : idx;
-    };
-    return CATEGORIES.map((cat) => ({
-      cat,
-      items: products
-        .filter((p) => p.categorie === cat && p.naam.toLowerCase().includes(q))
-        .sort((a, b) => {
-          const ra = rank(cat, a.naam);
-          const rb = rank(cat, b.naam);
-          if (ra !== rb) return ra - rb;
-          return a.naam.localeCompare(b.naam);
-        }),
-    })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
-  }, [products, search, catFilter]);
+  const grouped = useMemo(() => groupProducts(products, search, catFilter), [products, search, catFilter]);
+  const favCount = useMemo(() => products.filter((p) => p.favoriet).length, [products]);
 
   const sortedPallets = pallets.slice().sort((a, b) => (a.positie ?? 0) - (b.positie ?? 0));
 
@@ -641,25 +619,10 @@ function Wizard({
       {soort === "vol" && step === 1 && (
         <div className="mt-5">
           <Input placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
                   <button
@@ -690,25 +653,10 @@ function Wizard({
             </Button>
           </div>
           <Input className="mt-4" placeholder="Zoek merk/product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
                   <button
@@ -731,25 +679,10 @@ function Wizard({
         <div className="mt-5">
           <p className="text-sm font-medium">Kies de producten op deze pallet</p>
           <Input className="mt-2" placeholder="Zoek product…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
-              const active = catFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCatFilter(active ? null : cat)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? catSlot[cat] : "hover:border-primary"}`}
-                >
-                  <span className={`inline-block size-2.5 rounded-full ${active ? "bg-current opacity-80" : catSlot[cat]}`} />
-                  {catLabel[cat]}
-                </button>
-              );
-            })}
-          </div>
+          <CatChips catFilter={catFilter} setCatFilter={setCatFilter} favCount={favCount} />
           {grouped.map((g) => (
             <div key={g.cat} className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{catLabel[g.cat]}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => {
                   const sel = mixSelected.some((x) => x.id === p.id);

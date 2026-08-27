@@ -240,6 +240,7 @@ export type Database = {
           categorie: string
           code: string | null
           created_at: string
+          favoriet: boolean
           herbruikbaar: boolean
           id: string
           inhoud: string | null
@@ -259,6 +260,7 @@ export type Database = {
           categorie: string
           code?: string | null
           created_at?: string
+          favoriet?: boolean
           herbruikbaar?: boolean
           id?: string
           inhoud?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           categorie?: string
           code?: string | null
           created_at?: string
+          favoriet?: boolean
           herbruikbaar?: boolean
           id?: string
           inhoud?: string | null

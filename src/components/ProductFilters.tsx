@@ -9,6 +9,7 @@ export const pickerCatLabel: Record<string, string> = {
   bier: "Bier",
   water: "Water",
   frisdrank: "Limonade",
+  andere: "Andere",
 };
 
 export const pickerCatSlot: Record<string, string> = {
@@ -16,6 +17,7 @@ export const pickerCatSlot: Record<string, string> = {
   bier: "bg-warning text-warning-foreground border-warning",
   water: "bg-primary text-primary-foreground border-primary",
   frisdrank: "bg-success text-success-foreground border-success",
+  andere: "bg-muted text-muted-foreground border-border",
 };
 
 /** Chips: Favorieten + categorieën */
@@ -100,7 +102,8 @@ export function groupProducts(products: Product[], search: string, catFilter: st
     const idx = list.findIndex((k) => n.includes(k));
     return idx === -1 ? Infinity : idx;
   };
-  const match = (p: Product) => p.naam.toLowerCase().includes(q);
+  const match = (p: Product) =>
+    p.naam.toLowerCase().includes(q) || (p.code ?? "").toLowerCase().includes(q);
 
   if (catFilter === FAV) {
     const items = products.filter((p) => p.favoriet && match(p)).sort((a, b) => a.naam.localeCompare(b.naam));
@@ -119,6 +122,12 @@ export function groupProducts(products: Product[], search: string, catFilter: st
         return a.naam.localeCompare(b.naam);
       }),
   })).filter((g) => g.items.length > 0 && (!catFilter || g.cat === catFilter));
+
+  // Producten zonder herkende categorie ("andere") tonen we bij zoeken ook
+  const others = products
+    .filter((p) => !CATEGORIES.includes(p.categorie as any) && match(p))
+    .sort((a, b) => a.naam.localeCompare(b.naam));
+  if (!catFilter && others.length) groups.push({ cat: "andere", items: others });
 
   return catFilter || favGroup.length === 0 ? groups : [{ cat: FAV, items: favGroup }, ...groups];
 }

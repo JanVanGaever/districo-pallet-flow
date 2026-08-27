@@ -625,14 +625,16 @@ function Wizard({
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => { setProduct(p); setStep(2); }}
-                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                    className={`flex items-start gap-1 rounded-lg border p-3 transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
                   >
-                    <p className="font-medium text-sm">{p.naam}{p.inhoud ? ` · ${p.inhoud}` : ""}</p>
-                    <p className="text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</p>
-                  </button>
+                    <button onClick={() => { setProduct(p); setStep(2); }} className="min-w-0 flex-1 text-left">
+                      <p className="font-medium text-sm">{p.naam}{p.inhoud ? ` · ${p.inhoud}` : ""}</p>
+                      <p className="text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</p>
+                    </button>
+                    <FavStar product={p} onChange={onProductsChanged} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -659,13 +661,15 @@ function Wizard({
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{pickerCatLabel[g.cat] ?? catLabel[g.cat]}</p>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {g.items.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => { setProduct(p); setStep(2); }}
-                    className={`rounded-lg border p-3 text-left transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
+                    className={`flex items-start gap-1 rounded-lg border p-3 transition-colors hover:border-primary ${product?.id === p.id ? "border-primary bg-accent/40" : ""}`}
                   >
-                    <p className="font-medium text-sm">{p.naam}</p>
-                  </button>
+                    <button onClick={() => { setProduct(p); setStep(2); }} className="min-w-0 flex-1 text-left">
+                      <p className="font-medium text-sm">{p.naam}</p>
+                    </button>
+                    <FavStar product={p} onChange={onProductsChanged} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -692,10 +696,13 @@ function Wizard({
                       key={p.id}
                       className={`rounded-lg border p-3 transition-colors ${sel ? "border-primary bg-accent/40" : "hover:border-primary"}`}
                     >
-                      <button type="button" onClick={() => toggleMix(p)} className="block w-full text-left">
-                        <span className="block font-medium text-sm">{p.naam}</span>
-                        <span className="block text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</span>
-                      </button>
+                      <div className="flex items-start gap-1">
+                        <button type="button" onClick={() => toggleMix(p)} className="min-w-0 flex-1 text-left">
+                          <span className="block font-medium text-sm">{p.naam}</span>
+                          <span className="block text-xs text-muted-foreground">€{p.leeggoedwaarde_per_bak.toFixed(2)}/bak</span>
+                        </button>
+                        <FavStar product={p} onChange={onProductsChanged} />
+                      </div>
                       {sel ? (
                         <div className="mt-2 flex items-center gap-1">
                           <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n - 1)}>−</Button>

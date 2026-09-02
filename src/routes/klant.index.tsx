@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   CATEGORIES,
   CartLine,
@@ -253,7 +253,7 @@ function KlantPage() {
                   const gecred = statuses.filter((s) => s === "gecrediteerd").length;
                   const gelev = statuses.filter((s) => s === "geleverd").length;
                   return (
-                    <FragmentRow key={r.id}>
+                    <Fragment key={r.id}>
                       <tr key={r.id} className="cursor-pointer border-t hover:bg-accent/40" onClick={() => setOpenRetour(open ? null : r.id)}>
                         <td className="px-5 py-3 font-medium">
                           <span className="inline-flex items-center gap-1.5">
@@ -299,7 +299,7 @@ function KlantPage() {
                           </td>
                         </tr>
                       )}
-                    </FragmentRow>
+                    </Fragment>
                   );
                 })}
               </tbody>

@@ -181,6 +181,14 @@ function TopBar({
   return (
     <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3 [font-variant-numeric:tabular-nums]">
+        <Link
+          to="/"
+          aria-label="Terug naar hoofdmenu"
+          title="Terug naar hoofdmenu"
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-neutral-300 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
+        >
+          <ArrowLeft className="size-5" />
+        </Link>
         <div className="text-xl font-black tracking-tight text-red-700">DISTRICO</div>
         {retour && cust ? (
           <div className="flex flex-1 items-center justify-between gap-4 text-sm">

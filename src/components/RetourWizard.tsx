@@ -228,9 +228,10 @@ export function RetourWizard({
     });
   }
 
-  function setMixBakken(p: Product, n: number) {
+  function setMixBakken(p: Product, n: number, removeAtZero = true) {
     const val = Math.max(0, Math.min(99, Math.round(n || 0)));
-    if (val === 0) {
+    if (val === 0 && removeAtZero) {
+
       setMixSelected((prev) => prev.filter((x) => x.id !== p.id));
       setMixQty((q) => {
         const { [p.id]: _drop, ...rest } = q;

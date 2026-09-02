@@ -475,22 +475,28 @@ function KantoorPage() {
             <tbody>
               {retours.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                    Nog geen retours.
+                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    Geen retours voor deze filters.
                   </td>
                 </tr>
               ) : (
-                retours.map((g) => (
+                retours.map((g, i) => {
+                  const nieuweKlant = sortKey === "partij" && (i === 0 || retours[i - 1].partijNaam !== g.partijNaam);
+                  return (
                   <tr
                     key={g.retourId}
-                    className="cursor-pointer border-t hover:bg-accent/30"
+                    className={`cursor-pointer border-t hover:bg-accent/30 ${nieuweKlant && i > 0 ? "border-t-2 border-t-border" : ""}`}
                     onClick={() => setSelectedRetour(g.retourId)}
                   >
+                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">
+                      {new Date(g.laatsteActiviteit).toLocaleDateString("nl-BE", { day: "2-digit", month: "short", year: "numeric" })}
+                    </td>
                     <td className="px-4 py-3 font-medium">{g.retournummer}</td>
                     <td className="px-4 py-3">
                       <div>{g.partijNaam}</div>
                       <div className="text-xs text-muted-foreground">{g.partijSub}</div>
                     </td>
+
                     <td className="px-4 py-3">{g.totaal}</td>
                     <td className="px-4 py-3">
                       {g.ontvangen} / {g.totaal}

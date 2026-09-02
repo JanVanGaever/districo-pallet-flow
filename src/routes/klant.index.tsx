@@ -712,9 +712,12 @@ function Wizard({
                           <Input
                             className="h-7 w-14 text-center"
                             inputMode="numeric"
-                            value={n}
-                            onChange={(e) => setMixBakken(p, Number(e.target.value.replace(/\D/g, "")))}
+                            value={n === 0 ? "" : String(n)}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onChange={(e) => setMixBakken(p, Number(e.target.value.replace(/\D/g, "")), false)}
+                            onBlur={() => { if ((mixQty[p.id] ?? 0) === 0) setMixBakken(p, 1, false); }}
                           />
+
                           <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n + 1)}>+</Button>
                           <span className="ml-1 text-xs text-muted-foreground">bakken</span>
                         </div>

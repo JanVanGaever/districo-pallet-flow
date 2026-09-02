@@ -253,11 +253,59 @@ function CreditnotaCell({
   );
 }
 
+type SortKey = "datum" | "partij" | "retournummer" | "pallets" | "waarde" | "status";
+
+function SortHeader({
+  label,
+  sortKey,
+  active,
+  dir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKey: SortKey;
+  active: SortKey;
+  dir: "asc" | "desc";
+  onSort: (k: SortKey) => void;
+  align?: "left" | "right";
+}) {
+  const isActive = active === sortKey;
+  return (
+    <th className={`px-4 py-3 font-medium ${align === "right" ? "text-right" : "text-left"}`}>
+      <button
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-foreground ${isActive ? "text-foreground" : ""}`}
+      >
+        {label}
+        {isActive ? (
+          dir === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />
+        ) : (
+          <ArrowUpDown className="size-3.5 opacity-40" />
+        )}
+      </button>
+    </th>
+  );
+}
+
 function KantoorPage() {
   const qc = useQueryClient();
   const { data: rows } = useQuery({ queryKey: ["kantoor-rows"], queryFn: fetchRows });
   const [selectedRetour, setSelectedRetour] = useState<string | null>(null);
   const [tab, setTab] = useState<"klant" | "leverancier">("klant");
+  const [zoek, setZoek] = useState("");
+  const [periode, setPeriode] = useState<"alles" | "7" | "30" | "90">("alles");
+  const [statusFilter, setStatusFilter] = useState<"alles" | "open" | "gecrediteerd">("alles");
+  const [sortKey, setSortKey] = useState<SortKey>("datum");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function toggleSort(k: SortKey) {
+    if (k === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "partij" || k === "retournummer" ? "asc" : "desc");
+    }
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -277,12 +325,59 @@ function KantoorPage() {
     };
   }, [qc]);
 
-  const alle = groupByRetour(rows ?? []).sort(
-    (a, b) => new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime(),
-  );
+  const alle = groupByRetour(rows ?? []);
   const klanten = alle.filter((g) => g.soort === "klant");
   const leveranciers = alle.filter((g) => g.soort === "leverancier");
-  const retours = tab === "klant" ? klanten : leveranciers;
+
+  const basis = tab === "klant" ? klanten : leveranciers;
+
+  const q = zoek.trim().toLowerCase();
+  const grens = periode === "alles" ? null : Date.now() - Number(periode) * 86400000;
+  const gefilterd = basis.filter((g) => {
+    if (grens && new Date(g.laatsteActiviteit).getTime() < grens) return false;
+    if (statusFilter === "open" && g.creditnotaNummer) return false;
+    if (statusFilter === "gecrediteerd" && !g.creditnotaNummer) return false;
+    if (!q) return true;
+    return (
+      g.partijNaam.toLowerCase().includes(q) ||
+      g.partijSub.toLowerCase().includes(q) ||
+      g.retournummer.toLowerCase().includes(q) ||
+      (g.creditnotaNummer ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const collator = new Intl.Collator("nl-BE", { sensitivity: "base", numeric: true });
+  const statusRang = (g: RetourGroup) => (g.ontvangen === 0 ? 0 : g.ontvangen < g.totaal ? 1 : 2);
+  const retours = gefilterd.slice().sort((a, b) => {
+    const factor = sortDir === "asc" ? 1 : -1;
+    let cmp = 0;
+    switch (sortKey) {
+      case "datum":
+        cmp = new Date(a.laatsteActiviteit).getTime() - new Date(b.laatsteActiviteit).getTime();
+        break;
+      case "partij":
+        // Sorteren op klant/leverancier, daarbinnen altijd nieuwste retour eerst
+        cmp = collator.compare(a.partijNaam, b.partijNaam);
+        if (cmp === 0)
+          return new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime();
+        break;
+      case "retournummer":
+        cmp = collator.compare(a.retournummer, b.retournummer);
+        break;
+      case "pallets":
+        cmp = a.totaal - b.totaal;
+        break;
+      case "waarde":
+        cmp = a.waarde - b.waarde;
+        break;
+      case "status":
+        cmp = statusRang(a) - statusRang(b);
+        if (cmp === 0) cmp = a.ontvangen / a.totaal - b.ontvangen / b.totaal;
+        break;
+    }
+    if (cmp === 0) cmp = new Date(a.laatsteActiviteit).getTime() - new Date(b.laatsteActiviteit).getTime();
+    return cmp * factor;
+  });
 
   const totals = (list: RetourGroup[]) => {
     const waarde = list.reduce((s, g) => s + g.waarde, 0);
@@ -298,6 +393,7 @@ function KantoorPage() {
   const t = totals(retours);
   const tk = totals(klanten);
   const tl = totals(leveranciers);
+
 
   return (
     <div className="min-h-screen bg-background">

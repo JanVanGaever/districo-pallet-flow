@@ -29,7 +29,7 @@ export const Route = createFileRoute("/magazijn/v2")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Districo — Leeggoed ontvangen" },
+      { title: "Magazijn v2 (demo) — Districo Retour" },
       { name: "description", content: "iPad-app voor Districo-magazijniers om leeggoed-pallets snel te registreren aan de afhaalpoort." },
       { property: "og:title", content: "Districo — Leeggoed ontvangen" },
       { property: "og:description", content: "iPad-app voor Districo-magazijniers om leeggoed-pallets snel te registreren aan de afhaalpoort." },

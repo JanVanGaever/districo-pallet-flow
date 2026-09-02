@@ -61,6 +61,12 @@ function parseVerpakking(naam: string): { aantal: number | null; inhoud: string 
   if (m2) return { aantal: Number(m2[1]), inhoud: `${m2[2].replace(",", ".")}${m2[3].toLowerCase()}` };
   const m3 = s.match(/VAT\s*(\d+(?:[.,]\d+)?)\s*L|(\d+(?:[.,]\d+)?)\s*L\s*VAT/);
   if (m3) return { aantal: 1, inhoud: `vat ${(m3[1] ?? m3[2]).replace(",", ".")}l` };
+  // "24X1/5", "12X1/4 GLAS" → 24 stuks van 1/5 liter
+  const m4 = s.match(/(\d+)\s*X\s*(\d+)\s*\/\s*(\d+)/);
+  if (m4) return { aantal: Number(m4[1]), inhoud: `${m4[2]}/${m4[3]}l` };
+  // Laatste redmiddel: "24X..." zonder herkenbare inhoud
+  const m5 = s.match(/(\d+)\s*X(?!\s*\d+\s*X)/);
+  if (m5) return { aantal: Number(m5[1]), inhoud: null };
   return { aantal: null, inhoud: null };
 }
 

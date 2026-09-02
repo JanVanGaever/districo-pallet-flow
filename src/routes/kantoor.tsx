@@ -512,7 +512,9 @@ function KantoorPage() {
                       />
                     </td>
                   </tr>
-                ))
+                  );
+                })
+
               )}
             </tbody>
             {retours.length > 0 && (

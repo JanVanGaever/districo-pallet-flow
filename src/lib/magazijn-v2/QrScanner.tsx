@@ -42,11 +42,11 @@ export function QrScanner({ onScan, onCancel }: Props) {
 
   return (
     <div className="space-y-3">
-      <div ref={ref} className="w-full overflow-hidden rounded-xl bg-black" style={{ minHeight: 280 }} />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      <div ref={ref} className="w-full overflow-hidden rounded-xl bg-foreground" style={{ minHeight: 280 }} />
+      {error && <p className="text-sm text-primary">{error}</p>}
       <button
         onClick={onCancel}
-        className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base font-medium text-neutral-800"
+        className="h-14 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground"
       >
         Annuleer
       </button>

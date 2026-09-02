@@ -99,14 +99,14 @@ export function Coach({ enabled }: { enabled: boolean }) {
       <div
         className={`absolute rounded-2xl ${
           spot.soft
-            ? "ring-2 ring-neutral-400/60"
-            : "ring-4 ring-red-500/70 [animation:coach-pulse_1.6s_ease-in-out_infinite]"
+            ? "ring-2 ring-muted-foreground/40"
+            : "ring-4 ring-primary/70 [animation:coach-pulse_1.6s_ease-in-out_infinite]"
         }`}
         style={{ top: ringTop, left: spot.left - 6, width: spot.width + 12, height: ringHeight }}
       />
       {/* tekstballon */}
       <div
-        className="absolute -translate-x-1/2 rounded-xl bg-neutral-800 px-4 py-2 text-base font-semibold text-white shadow-lg"
+        className="absolute -translate-x-1/2 rounded-xl bg-foreground px-4 py-2 text-base font-semibold text-primary-foreground shadow-lg"
         style={{ top: bubbleTop, left: Math.min(Math.max(centerX, 90), window.innerWidth - 90) }}
       >
         {spot.label}

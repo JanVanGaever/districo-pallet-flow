@@ -96,11 +96,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+    <div className="min-h-screen bg-background text-foreground">
       <TopBar retour={retour} demo={demo} onToggleDemo={toggleDemo} />
       <main className="mx-auto max-w-3xl px-4 py-6 pb-32 [font-variant-numeric:tabular-nums]">
         {!ready && (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-center text-neutral-500">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground">
             Klanten en producten laden…
           </div>
         )}
@@ -189,39 +189,38 @@ function TopBar({
   const t = totals(retour);
   const cust = retour ? customerById(retour.customerId) : null;
   return (
-    <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
-      <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3 [font-variant-numeric:tabular-nums]">
-        <Link
-          to="/"
-          aria-label="Terug naar hoofdmenu"
-          title="Terug naar hoofdmenu"
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-neutral-300 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
-        >
+    <header className="sticky top-0 z-10 border-b border-border bg-card">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 [font-variant-numeric:tabular-nums]">
+        <Link to="/" aria-label="Terug naar hoofdmenu" title="Terug naar hoofdmenu" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-5" />
         </Link>
-        <div className="text-xl font-black tracking-tight text-red-700">DISTRICO</div>
+        <div className="size-8 shrink-0 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold text-sm">D</div>
+        <div className="shrink-0">
+          <p className="text-sm font-semibold leading-tight">Magazijnier</p>
+          <p className="text-xs text-muted-foreground">Districo Retour</p>
+        </div>
         {retour && cust ? (
           <div className="flex flex-1 items-center justify-between gap-4 text-sm">
             <div className="min-w-0">
-              <div className="truncate font-semibold text-neutral-900">{cust.naam}</div>
-              <div className="truncate text-xs text-neutral-500">
+              <div className="truncate font-semibold text-foreground">{cust.naam}</div>
+              <div className="truncate text-xs text-muted-foreground">
                 {cust.id}
                 {cust.plaats ? ` · ${cust.plaats}` : ""} · {retour.retourNumber}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-4">
               <div className="text-right">
-                <div className="text-xs text-neutral-500">Pallets</div>
+                <div className="text-xs text-muted-foreground">Pallets</div>
                 <div className="text-base font-semibold">{t.count}</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-neutral-500">Bekend</div>
+                <div className="text-xs text-muted-foreground">Bekend</div>
                 <div className="text-base font-semibold">{eur(t.known)}</div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex-1 text-sm text-neutral-500">Leeggoed ontvangen</div>
+          <div className="flex-1 text-sm text-muted-foreground">Leeggoed ontvangen</div>
         )}
         <button
           onClick={onToggleDemo}
@@ -229,18 +228,18 @@ function TopBar({
           title="Demo-/leermodus: toont een handje bij de volgende stap"
           className={`ml-2 flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold ${
             demo
-              ? "border-red-700 bg-red-50 text-red-800"
-              : "border-neutral-300 bg-white text-neutral-600"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground"
           }`}
         >
           <span className="text-base">👆</span>
           <span className="hidden sm:inline">Demo-modus</span>
           <span
             className={`flex h-5 w-9 items-center rounded-full px-0.5 transition ${
-              demo ? "bg-red-700" : "bg-neutral-300"
+              demo ? "bg-primary" : "bg-muted"
             }`}
           >
-            <span className={`h-4 w-4 rounded-full bg-white transition ${demo ? "translate-x-4" : ""}`} />
+            <span className={`h-4 w-4 rounded-full bg-card transition ${demo ? "translate-x-4" : ""}`} />
           </span>
         </button>
       </div>
@@ -269,16 +268,16 @@ function StartScreen({
               <button
                 onClick={() => onPick(e.id, e.order)}
                 {...(idx === 0 ? { "data-coach": "Kies een klant", "data-coach-order": "0" } : {})}
-                className="flex w-full items-center gap-4 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left shadow-sm transition active:bg-neutral-50"
+                className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-sm transition active:bg-muted/40"
               >
                 
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-lg font-semibold">{c.naam}</div>
-                  <div className="truncate text-sm text-neutral-500">
+                  <div className="truncate text-sm text-muted-foreground">
                     {c.id} · {c.plaats || "—"} · {e.order}
                   </div>
                 </div>
-                <div className="text-neutral-400">›</div>
+                <div className="text-muted-foreground">›</div>
               </button>
             </li>
           );
@@ -286,7 +285,7 @@ function StartScreen({
       </ul>
       <button
         onClick={onSearch}
-        className="h-14 w-full rounded-xl border border-neutral-300 bg-white text-base font-medium text-neutral-800"
+        className="h-14 w-full rounded-xl border border-border bg-card text-base font-medium text-foreground"
       >
         Andere klant zoeken
       </button>
@@ -312,7 +311,7 @@ function SearchScreen({ onPick, onBack }: { onPick: (id: string) => void; onBack
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Klant zoeken</h1>
-        <button onClick={onBack} className="text-sm font-medium text-neutral-600">
+        <button onClick={onBack} className="text-sm font-medium text-muted-foreground">
           Terug
         </button>
       </div>
@@ -321,23 +320,23 @@ function SearchScreen({ onPick, onBack }: { onPick: (id: string) => void; onBack
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Naam, plaats of klantnummer"
-        className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base"
+        className="h-14 w-full rounded-xl border border-border bg-card px-4 text-base"
       />
       <ul className="space-y-2">
         {list.map((c) => (
           <li key={c.id}>
             <button
               onClick={() => onPick(c.id)}
-              className="flex w-full items-center justify-between rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left active:bg-neutral-50"
+              className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-5 py-4 text-left active:bg-muted/40"
             >
               <div className="min-w-0">
                 <div className="truncate text-lg font-semibold">{c.naam}</div>
-                <div className="truncate text-sm text-neutral-500">
+                <div className="truncate text-sm text-muted-foreground">
                   {c.id}
                   {c.plaats ? ` · ${c.plaats}` : ""}
                 </div>
               </div>
-              <div className="text-neutral-400">›</div>
+              <div className="text-muted-foreground">›</div>
             </button>
           </li>
         ))}
@@ -349,8 +348,8 @@ function SearchScreen({ onPick, onBack }: { onPick: (id: string) => void; onBack
 /* ------------ Retour overview ------------ */
 
 const STATUS_BADGE: Record<"correct" | "fout", string> = {
-  correct: "bg-emerald-100 text-emerald-800",
-  fout: "bg-red-100 text-red-800",
+  correct: "bg-success/15 text-success",
+  fout: "bg-primary/15 text-primary",
 };
 const STATUS_LABEL: Record<"correct" | "fout", string> = {
   correct: "Correct ✓",
@@ -378,14 +377,14 @@ function RetourScreen({
         <h1 className="text-2xl font-bold">Pallets</h1>
         <button
           onClick={onBatch}
-          className="h-12 rounded-xl border border-neutral-300 bg-white px-4 text-sm font-medium"
+          className="h-12 rounded-xl border border-border bg-card px-4 text-sm font-medium"
         >
           QR-codes aanmaken{preGen.length > 0 ? ` (${preGen.length} klaar)` : ""}
         </button>
       </div>
 
       {retour.pallets.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-500">
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center text-muted-foreground">
           Nog geen pallets toegevoegd.
         </div>
       ) : (
@@ -407,7 +406,7 @@ function RetourScreen({
             return (
               <li
                 key={i}
-                className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-5 py-4"
+                className="flex items-center justify-between rounded-2xl border border-border bg-card px-5 py-4"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -420,7 +419,7 @@ function RetourScreen({
                     </span>
                     <span className="truncate font-semibold">{label}</span>
                   </div>
-                  <div className="mt-1 text-xs text-neutral-500">
+                  <div className="mt-1 text-xs text-muted-foreground">
                     {p.palletNumber} · Foto {p.foto ? "✓" : "—"}
                   </div>
                 </div>
@@ -428,7 +427,7 @@ function RetourScreen({
                   {hasLines ? (
                     eur(linesValue(p.lines!))
                   ) : (
-                    <span className="text-neutral-500">na controle</span>
+                    <span className="text-muted-foreground">na controle</span>
                   )}
                 </div>
               </li>
@@ -441,18 +440,18 @@ function RetourScreen({
         onClick={onAdd}
         data-coach="Voeg een pallet toe"
         data-coach-order="1"
-        className="h-16 w-full rounded-2xl bg-red-700 text-lg font-semibold text-white shadow active:bg-red-800"
+        className="h-16 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow active:bg-primary/90"
       >
         + Pallet toevoegen
       </button>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-white">
+      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 [font-variant-numeric:tabular-nums]">
           <div className="text-sm">
-            <div className="text-xs text-neutral-500">Bekend statiegeld</div>
+            <div className="text-xs text-muted-foreground">Bekend statiegeld</div>
             <div className="text-lg font-bold">{eur(t.known)}</div>
             {t.pending > 0 && (
-              <div className="text-xs text-amber-700">{t.pending} pallet(s) na controle</div>
+              <div className="text-xs text-warning-foreground">{t.pending} pallet(s) na controle</div>
             )}
           </div>
           <button
@@ -460,7 +459,7 @@ function RetourScreen({
             onClick={onConfirm}
             data-coach="Rond de retour af"
             data-coach-order="5"
-            className="h-14 rounded-xl bg-red-700 px-8 text-base font-semibold text-white disabled:bg-neutral-300"
+            className="h-14 rounded-xl bg-primary px-8 text-base font-semibold text-primary-foreground disabled:bg-muted"
           >
             Afronden
           </button>
@@ -539,7 +538,7 @@ function AddPalletScreen({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Pallet toevoegen</h1>
-        <button onClick={onCancel} className="text-sm font-medium text-neutral-600">
+        <button onClick={onCancel} className="text-sm font-medium text-muted-foreground">
           Annuleer
         </button>
       </div>
@@ -547,13 +546,13 @@ function AddPalletScreen({
       {/* Step 1 — identity */}
       <Step n={1} title="Identiteit" done={!!palletNumber}>
         {palletNumber ? (
-          <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-4">
+          <div className="flex items-center justify-between rounded-xl bg-success/10 p-4">
             <div>
-              <div className="text-xs text-emerald-800">Palletnummer</div>
+              <div className="text-xs text-success">Palletnummer</div>
               <div className="text-lg font-bold">{palletNumber}</div>
             </div>
             {generatedQR && (
-              <div className="rounded-md bg-white p-2">
+              <div className="rounded-md bg-card p-2">
                 <QRCodeSVG value={generatedQR} size={88} />
               </div>
             )}
@@ -562,7 +561,7 @@ function AddPalletScreen({
                 setPalletNumber(null);
                 setGeneratedQR(null);
               }}
-              className="text-sm text-neutral-600"
+              className="text-sm text-muted-foreground"
             >
               Wijzig
             </button>
@@ -581,7 +580,7 @@ function AddPalletScreen({
               <button
                 disabled
                 aria-disabled="true"
-                className="h-16 cursor-not-allowed rounded-xl bg-neutral-900 text-base font-semibold text-white opacity-60"
+                className="h-16 cursor-not-allowed rounded-xl bg-foreground text-base font-semibold text-primary-foreground opacity-60"
               >
                 Scan QR
               </button>
@@ -592,7 +591,7 @@ function AddPalletScreen({
                   setPalletNumber(n);
                   setGeneratedQR(n);
                 }}
-                className="h-16 rounded-xl border-2 border-neutral-900 bg-white text-base font-semibold"
+                className="h-16 rounded-xl border-2 border-foreground bg-card text-base font-semibold"
               >
                 QR aanmaken
               </button>
@@ -604,13 +603,13 @@ function AddPalletScreen({
               }}
               data-coach="Scan de pallet (simulatie)"
               data-coach-order="0"
-              className="h-14 w-full rounded-xl border-2 border-dashed border-amber-500 bg-amber-50 text-base font-semibold text-amber-900"
+              className="h-14 w-full rounded-xl border-2 border-dashed border-warning bg-warning/10 text-base font-semibold text-warning-foreground"
             >
               🧪 Simuleer scan (test)
             </button>
             {preGen.length > 0 && (
               <div>
-                <div className="mb-2 text-sm font-medium text-neutral-600">
+                <div className="mb-2 text-sm font-medium text-muted-foreground">
                   Vooraf gegenereerd
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -618,7 +617,7 @@ function AddPalletScreen({
                     <button
                       key={n}
                       onClick={() => setPalletNumber(n)}
-                      className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium"
+                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium"
                     >
                       {n}
                     </button>
@@ -626,8 +625,8 @@ function AddPalletScreen({
                 </div>
               </div>
             )}
-            <details className="rounded-xl border border-neutral-200 bg-white p-3">
-              <summary className="cursor-pointer text-sm font-medium text-neutral-700">
+            <details className="rounded-xl border border-border bg-card p-3">
+              <summary className="cursor-pointer text-sm font-medium text-foreground">
                 Simuleer scan / handmatig
               </summary>
               <div className="mt-3 flex gap-2">
@@ -635,7 +634,7 @@ function AddPalletScreen({
                   value={manual}
                   onChange={(e) => setManual(e.target.value)}
                   placeholder="PAL-2026-…"
-                  className="h-12 flex-1 rounded-lg border border-neutral-300 px-3"
+                  className="h-12 flex-1 rounded-lg border border-border px-3"
                 />
                 <button
                   onClick={() => {
@@ -644,7 +643,7 @@ function AddPalletScreen({
                       setManual("");
                     }
                   }}
-                  className="h-12 rounded-lg bg-neutral-900 px-4 text-sm font-semibold text-white"
+                  className="h-12 rounded-lg bg-foreground px-4 text-sm font-semibold text-primary-foreground"
                 >
                   Gebruik
                 </button>
@@ -657,18 +656,18 @@ function AddPalletScreen({
       {/* Step 2 — photo */}
       <Step n={2} title="Foto" done={allPhotos} disabled={!palletNumber}>
         <div className="space-y-2">
-          <div className="text-sm text-neutral-600">Neem één foto van de pallet</div>
+          <div className="text-sm text-muted-foreground">Neem één foto van de pallet</div>
           <div
             className={`relative mx-auto flex w-full max-w-md cursor-not-allowed flex-col items-center justify-center overflow-hidden rounded-xl border-2 text-center text-sm font-semibold ${
               photos.zijde1
-                ? "aspect-[3/4] border-emerald-500 bg-neutral-900 text-emerald-800"
-                : "h-48 border-dashed border-neutral-400 bg-white text-neutral-700"
+                ? "aspect-[3/4] border-success bg-foreground text-success"
+                : "h-48 border-dashed border-muted-foreground/40 bg-card text-foreground"
             } ${!palletNumber ? "opacity-50" : ""}`}
           >
             {photos.zijde1 ? (
               <>
                 <img src={photos.zijde1} alt="Pallet" className="absolute inset-0 h-full w-full object-contain" />
-                <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-white">Foto ✓</span>
+                <span className="absolute inset-x-0 bottom-0 bg-foreground/60 py-1 text-primary-foreground">Foto ✓</span>
               </>
             ) : (
               <>
@@ -687,7 +686,7 @@ function AddPalletScreen({
                     setPhotos({});
                     setPhotoConfirmed(false);
                   }}
-                  className="h-10 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-medium"
+                  className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-medium"
                 >
                   Wis foto
                 </button>
@@ -696,8 +695,8 @@ function AddPalletScreen({
                   {...(!photoConfirmed
                     ? { "data-coach": "Bevestig de foto", "data-coach-order": "1" }
                     : {})}
-                  className={`h-10 flex-1 rounded-lg px-3 text-sm font-semibold text-white ${
-                    photoConfirmed ? "bg-emerald-700" : "bg-neutral-900"
+                  className={`h-10 flex-1 rounded-lg px-3 text-sm font-semibold text-primary-foreground ${
+                    photoConfirmed ? "bg-success" : "bg-foreground"
                   }`}
                 >
                   {photoConfirmed ? "Foto bevestigd ✓" : "Bevestig foto"}
@@ -711,7 +710,7 @@ function AddPalletScreen({
                 }}
                 data-coach="Neem een foto (simulatie)"
                 data-coach-order="1"
-                className="h-10 rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 px-3 text-sm font-semibold text-amber-900"
+                className="h-10 rounded-lg border-2 border-dashed border-warning bg-warning/10 px-3 text-sm font-semibold text-warning-foreground"
               >
                 🧪 Simuleer foto
               </button>
@@ -744,11 +743,11 @@ function AddPalletScreen({
             className={`flex h-28 flex-col items-center justify-center rounded-xl border-2 disabled:opacity-50 ${
 
               status === "correct"
-                ? "border-emerald-600 bg-emerald-50"
-                : "border-neutral-200 bg-white"
+                ? "border-success bg-success/10"
+                : "border-border bg-card"
             }`}
           >
-            <span className="text-4xl leading-none text-emerald-600">✓</span>
+            <span className="text-4xl leading-none text-success">✓</span>
             <span className="mt-2 text-lg font-bold">Ontvangst correct</span>
           </button>
           <button
@@ -756,11 +755,11 @@ function AddPalletScreen({
             disabled={!allPhotos}
             className={`flex h-28 flex-col items-center justify-center rounded-xl border-2 disabled:opacity-50 ${
               status === "fout"
-                ? "border-red-600 bg-red-50"
-                : "border-neutral-200 bg-white"
+                ? "border-primary bg-primary/10"
+                : "border-border bg-card"
             }`}
           >
-            <span className="text-4xl leading-none text-red-600">✕</span>
+            <span className="text-4xl leading-none text-primary">✕</span>
             <span className="mt-2 text-lg font-bold">Fout</span>
           </button>
         </div>
@@ -785,7 +784,7 @@ function AddPalletScreen({
                 if (palletNumber) setLines(declaredForPallet(palletNumber));
               }}
               className={`flex h-24 flex-col items-center justify-center rounded-xl border-2 ${
-                handling === "nu" ? "border-red-700 bg-red-50" : "border-neutral-200 bg-white"
+                handling === "nu" ? "border-primary bg-primary/10" : "border-border bg-card"
               }`}
             >
               <span className="text-3xl leading-none">✎</span>
@@ -797,7 +796,7 @@ function AddPalletScreen({
                 setLines([]);
               }}
               className={`flex h-24 flex-col items-center justify-center rounded-xl border-2 ${
-                handling === "later" ? "border-amber-600 bg-amber-50" : "border-neutral-200 bg-white"
+                handling === "later" ? "border-warning bg-warning/10" : "border-border bg-card"
               }`}
             >
               <span className="text-3xl leading-none">⏱</span>
@@ -811,7 +810,7 @@ function AddPalletScreen({
       {status === "fout" && handling === "nu" && (
         <Step n={5} title="Correctie" done={allLinesHandled}>
           <div className="space-y-3">
-            <div className="text-sm text-neutral-600">
+            <div className="text-sm text-muted-foreground">
               Aangemelde producten — bevestig of corrigeer elk product (
               {lines.filter((l) => l.changed).length}/{lines.length})
             </div>
@@ -826,8 +825,8 @@ function AddPalletScreen({
                     key={i}
                     className={`overflow-hidden rounded-xl border-2 ${
                       l.changed
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-neutral-200 bg-white"
+                        ? "border-success bg-success/10"
+                        : "border-border bg-card"
                     }`}
                   >
                     <button
@@ -844,7 +843,7 @@ function AddPalletScreen({
                         <div className="truncate text-lg font-semibold">
                           {prod?.naam ?? "—"} {l.changed ? "✓" : ""}
                         </div>
-                        <div className="truncate text-xs text-neutral-500">
+                        <div className="truncate text-xs text-muted-foreground">
                           {prod?.verp}
                           {l.declaredAantal === null ? " · toegevoegd" : ""}
                           {afwijking ? ` · aangemeld ${l.declaredAantal}×` : ""}
@@ -852,18 +851,18 @@ function AddPalletScreen({
                       </div>
                       <div className="shrink-0 text-right">
                         <div className="text-xl font-bold tabular-nums">{l.aantal}×</div>
-                        <div className="text-xs text-neutral-500">
+                        <div className="text-xs text-muted-foreground">
                           {prod ? eur(prod.bak * l.aantal) : ""}
                         </div>
                       </div>
                     </button>
 
                     {open && (
-                      <div className="space-y-3 border-t border-neutral-200 bg-white/70 px-4 py-4">
+                      <div className="space-y-3 border-t border-border bg-card/70 px-4 py-4">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setLine(i, { aantal: Math.max(0, l.aantal - 1) })}
-                            className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+                            className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
                           >
                             −
                           </button>
@@ -877,11 +876,11 @@ function AddPalletScreen({
                               setLine(i, { aantal: Number.isNaN(v) ? 0 : Math.max(0, v) });
                             }}
                             onFocus={(e) => e.currentTarget.select()}
-                            className="h-14 flex-1 rounded-xl border border-neutral-300 text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="h-14 flex-1 rounded-xl border border-border text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           />
                           <button
                             onClick={() => setLine(i, { aantal: l.aantal + 1 })}
-                            className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+                            className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
                           >
                             +
                           </button>
@@ -901,7 +900,7 @@ function AddPalletScreen({
                               });
                               setOpenLine(null);
                             }}
-                            className="h-14 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-base font-bold text-emerald-800"
+                            className="h-14 rounded-xl border-2 border-success bg-success/10 text-base font-bold text-success"
                           >
                             ✓ Bevestigen
                           </button>
@@ -910,7 +909,7 @@ function AddPalletScreen({
                               setLine(i, { changed: true });
                               setOpenLine(null);
                             }}
-                            className="h-14 rounded-xl bg-neutral-900 text-base font-bold text-white"
+                            className="h-14 rounded-xl bg-foreground text-base font-bold text-primary-foreground"
                           >
                             Corrigeren naar {l.aantal}×
                           </button>
@@ -920,7 +919,7 @@ function AddPalletScreen({
                             setLines((ls) => ls.filter((_, k) => k !== i));
                             setOpenLine(null);
                           }}
-                          className="h-11 w-full rounded-xl border border-red-300 bg-white text-sm font-medium text-red-700"
+                          className="h-11 w-full rounded-xl border border-primary/40 bg-card text-sm font-medium text-primary"
                         >
                           Product verwijderen
                         </button>
@@ -931,14 +930,14 @@ function AddPalletScreen({
               })}
             </ul>
 
-            <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">
-              <span className="text-sm font-medium text-neutral-600">Totaal statiegeld</span>
+            <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3">
+              <span className="text-sm font-medium text-muted-foreground">Totaal statiegeld</span>
               <span className="text-lg font-bold tabular-nums">{eur(linesValue(lines))}</span>
             </div>
 
             {/* Product toevoegen */}
             {adding ? (
-              <div className="space-y-3 rounded-xl border-2 border-neutral-300 bg-white p-4">
+              <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
                 <div className="text-sm font-semibold">Product toevoegen</div>
                 <div className="flex flex-wrap gap-2">
                   {productCats().map((c) => (
@@ -947,8 +946,8 @@ function AddPalletScreen({
                       onClick={() => setCat(c)}
                       className={`h-10 rounded-full px-4 text-sm font-medium ${
                         cat === c
-                          ? "bg-neutral-900 text-white"
-                          : "border border-neutral-300 bg-white text-neutral-700"
+                          ? "bg-foreground text-primary-foreground"
+                          : "border border-border bg-card text-foreground"
                       }`}
                     >
                       {c}
@@ -959,7 +958,7 @@ function AddPalletScreen({
                   value={pq}
                   onChange={(e) => setPq(e.target.value)}
                   placeholder="Zoek product"
-                  className="h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base"
+                  className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base"
                 />
                 <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
                   {products.map((p) => (
@@ -968,13 +967,13 @@ function AddPalletScreen({
                       onClick={() => setNewProductId(p.id)}
                       className={`flex items-center justify-between rounded-xl border-2 px-4 py-3 text-left ${
                         newProductId === p.id
-                          ? "border-red-700 bg-red-50"
-                          : "border-neutral-200 bg-white"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card"
                       }`}
                     >
                       <div>
                         <div className="font-semibold">{p.naam}</div>
-                        <div className="text-xs text-neutral-500">{p.verp}</div>
+                        <div className="text-xs text-muted-foreground">{p.verp}</div>
                       </div>
                       <div className="text-right font-semibold tabular-nums">{eur(p.bak)}</div>
                     </button>
@@ -983,7 +982,7 @@ function AddPalletScreen({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setNewAantal(Math.max(1, newAantal - 1))}
-                    className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+                    className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
                   >
                     −
                   </button>
@@ -997,11 +996,11 @@ function AddPalletScreen({
                       setNewAantal(Number.isNaN(v) ? 1 : Math.max(1, v));
                     }}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="h-14 flex-1 rounded-xl border border-neutral-300 text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="h-14 flex-1 rounded-xl border border-border text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <button
                     onClick={() => setNewAantal(newAantal + 1)}
-                    className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+                    className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
                   >
                     +
                   </button>
@@ -1012,7 +1011,7 @@ function AddPalletScreen({
                       setAdding(false);
                       setNewProductId(null);
                     }}
-                    className="h-14 rounded-xl border border-neutral-300 bg-white text-base font-medium"
+                    className="h-14 rounded-xl border border-border bg-card text-base font-medium"
                   >
                     Annuleer
                   </button>
@@ -1033,7 +1032,7 @@ function AddPalletScreen({
                       setNewProductId(null);
                       setNewAantal(1);
                     }}
-                    className="h-14 rounded-xl bg-neutral-900 text-base font-bold text-white disabled:bg-neutral-300"
+                    className="h-14 rounded-xl bg-foreground text-base font-bold text-primary-foreground disabled:bg-muted"
                   >
                     Toevoegen
                   </button>
@@ -1042,7 +1041,7 @@ function AddPalletScreen({
             ) : (
               <button
                 onClick={() => setAdding(true)}
-                className="h-14 w-full rounded-xl border-2 border-neutral-900 bg-white text-base font-semibold"
+                className="h-14 w-full rounded-xl border-2 border-foreground bg-card text-base font-semibold"
               >
                 + Product toevoegen
               </button>
@@ -1056,7 +1055,7 @@ function AddPalletScreen({
         onClick={submit}
         data-coach="Bewaar deze pallet"
         data-coach-order="3"
-        className="h-16 w-full rounded-2xl bg-red-700 text-lg font-semibold text-white shadow disabled:bg-neutral-300"
+        className="h-16 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow disabled:bg-muted"
       >
         Pallet toevoegen
       </button>
@@ -1079,14 +1078,14 @@ function Step({
 }) {
   return (
     <section
-      className={`rounded-2xl border bg-white p-4 ${
-        disabled ? "border-neutral-200 opacity-50" : "border-neutral-200"
+      className={`rounded-2xl border bg-card p-4 ${
+        disabled ? "border-border opacity-50" : "border-border"
       }`}
     >
       <div className="mb-3 flex items-center gap-3">
         <div
           className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-            done ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"
+            done ? "bg-success text-primary-foreground" : "bg-muted text-foreground"
           }`}
         >
           {done ? "✓" : n}
@@ -1114,9 +1113,9 @@ function TypeButton({
   onClick: () => void;
 }) {
   const palette = {
-    emerald: active ? "border-emerald-600 bg-emerald-50" : "border-neutral-200 bg-white",
-    amber: active ? "border-amber-500 bg-amber-50" : "border-neutral-200 bg-white",
-    neutral: active ? "border-neutral-700 bg-neutral-100" : "border-neutral-200 bg-white",
+    emerald: active ? "border-success bg-success/10" : "border-border bg-card",
+    amber: active ? "border-warning bg-warning/10" : "border-border bg-card",
+    neutral: active ? "border-foreground bg-background" : "border-border bg-card",
   }[color];
   return (
     <button
@@ -1125,7 +1124,7 @@ function TypeButton({
       className={`flex h-24 flex-col items-center justify-center rounded-xl border-2 ${palette} disabled:opacity-50`}
     >
       <span className="text-lg font-bold">{label}</span>
-      <span className="mt-1 text-xs text-neutral-500">{desc}</span>
+      <span className="mt-1 text-xs text-muted-foreground">{desc}</span>
     </button>
   );
 }
@@ -1143,23 +1142,23 @@ function BatchQRScreen({ onDone, onCancel }: { onDone: (nums: string[]) => void;
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">QR-codes aanmaken</h1>
-        <button onClick={onCancel} className="text-sm text-neutral-600">
+        <button onClick={onCancel} className="text-sm text-muted-foreground">
           Terug
         </button>
       </div>
       {nums.length === 0 ? (
-        <div className="space-y-4 rounded-2xl bg-white p-5">
+        <div className="space-y-4 rounded-2xl bg-card p-5">
           <label className="block text-sm font-medium">Aantal pallets</label>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCount(Math.max(1, count - 10))}
-              className="h-14 w-14 rounded-xl border border-neutral-300 text-lg font-bold"
+              className="h-14 w-14 rounded-xl border border-border text-lg font-bold"
             >
               −10
             </button>
             <button
               onClick={() => setCount(Math.max(1, count - 1))}
-              className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+              className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
             >
               −
             </button>
@@ -1175,17 +1174,17 @@ function BatchQRScreen({ onDone, onCancel }: { onDone: (nums: string[]) => void;
                 setCount(Math.min(50, Math.max(1, v)));
               }}
               onFocus={(e) => e.currentTarget.select()}
-              className="h-14 flex-1 rounded-xl border border-neutral-300 text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="h-14 flex-1 rounded-xl border border-border text-center text-2xl font-bold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
             <button
               onClick={() => setCount(Math.min(50, count + 1))}
-              className="h-14 w-14 rounded-xl border border-neutral-300 text-2xl font-bold"
+              className="h-14 w-14 rounded-xl border border-border text-2xl font-bold"
             >
               +
             </button>
             <button
               onClick={() => setCount(Math.min(50, count + 10))}
-              className="h-14 w-14 rounded-xl border border-neutral-300 text-lg font-bold"
+              className="h-14 w-14 rounded-xl border border-border text-lg font-bold"
             >
               +10
             </button>
@@ -1197,8 +1196,8 @@ function BatchQRScreen({ onDone, onCancel }: { onDone: (nums: string[]) => void;
                 onClick={() => setCount(n)}
                 className={`h-12 flex-1 min-w-[64px] rounded-xl border text-base font-semibold tabular-nums ${
                   count === n
-                    ? "border-red-700 bg-red-50 text-red-700"
-                    : "border-neutral-300 bg-white text-neutral-800"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground"
                 }`}
               >
                 {n}
@@ -1207,7 +1206,7 @@ function BatchQRScreen({ onDone, onCancel }: { onDone: (nums: string[]) => void;
           </div>
           <button
             onClick={generate}
-            className="h-14 w-full rounded-xl bg-red-700 text-base font-semibold text-white"
+            className="h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground"
           >
             Genereer {count} QR-{count === 1 ? "code" : "codes"}
           </button>
@@ -1217,20 +1216,20 @@ function BatchQRScreen({ onDone, onCancel }: { onDone: (nums: string[]) => void;
           <div className="flex gap-2 print:hidden">
             <button
               onClick={() => window.print()}
-              className="h-12 flex-1 rounded-xl bg-neutral-900 text-sm font-semibold text-white"
+              className="h-12 flex-1 rounded-xl bg-foreground text-sm font-semibold text-primary-foreground"
             >
               Afdrukken
             </button>
             <button
               onClick={() => onDone(nums)}
-              className="h-12 flex-1 rounded-xl bg-red-700 text-sm font-semibold text-white"
+              className="h-12 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
             >
               Klaar
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {nums.map((n) => (
-              <div key={n} className="flex flex-col items-center rounded-xl bg-white p-4">
+              <div key={n} className="flex flex-col items-center rounded-xl bg-card p-4">
                 <QRCodeSVG value={n} size={140} />
                 <div className="mt-2 text-sm font-semibold tabular-nums">{n}</div>
               </div>
@@ -1260,33 +1259,33 @@ function ConfirmScreen({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Ontvangst bevestigen</h1>
-        <button onClick={onBack} className="text-sm text-neutral-600">
+        <button onClick={onBack} className="text-sm text-muted-foreground">
           Terug
         </button>
       </div>
 
-      <div className="rounded-2xl bg-white p-5">
+      <div className="rounded-2xl bg-card p-5">
         <div className="grid grid-cols-2 gap-3 text-center">
           <Stat label="Correct" value={t.correct} color="emerald" />
           <Stat label="Fout" value={t.fout} color="amber" />
         </div>
 
-        <div className="mt-4 border-t border-neutral-200 pt-4">
+        <div className="mt-4 border-t border-border pt-4">
           <div className="flex justify-between">
-            <span className="text-neutral-600">Bekend statiegeld</span>
+            <span className="text-muted-foreground">Bekend statiegeld</span>
             <span className="text-lg font-bold tabular-nums">{eur(t.known)}</span>
           </div>
           {t.pending > 0 && (
-            <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            <p className="mt-2 rounded-lg bg-warning/10 p-3 text-sm text-warning-foreground">
               {t.pending} pallet(s) worden na controle in het magazijn geteld en gecrediteerd.
             </p>
           )}
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-5">
+      <div className="rounded-2xl bg-card p-5">
         <h2 className="mb-2 text-lg font-semibold">Handtekening klant</h2>
-        <p className="mb-3 text-sm text-neutral-600">
+        <p className="mb-3 text-sm text-muted-foreground">
           De klant tekent voor de <strong>ontvangst van de pallets</strong>, niet voor een eindbedrag.
         </p>
         <SignaturePad onChange={setHasSig} />
@@ -1297,7 +1296,7 @@ function ConfirmScreen({
         onClick={onDone}
         data-coach="Laat de klant aftekenen en bevestig"
         data-coach-order="4"
-        className="h-16 w-full rounded-2xl bg-red-700 text-lg font-semibold text-white shadow disabled:bg-neutral-300"
+        className="h-16 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow disabled:bg-muted"
       >
         Bevestig ontvangst
       </button>
@@ -1307,9 +1306,9 @@ function ConfirmScreen({
 
 function Stat({ label, value, color }: { label: string; value: number; color: "emerald" | "amber" | "neutral" }) {
   const c = {
-    emerald: "bg-emerald-50 text-emerald-800",
-    amber: "bg-amber-50 text-amber-800",
-    neutral: "bg-neutral-100 text-neutral-700",
+    emerald: "bg-success/10 text-success",
+    amber: "bg-warning/10 text-warning-foreground",
+    neutral: "bg-background text-foreground",
   }[color];
   return (
     <div className={`rounded-xl ${c} p-3`}>
@@ -1326,13 +1325,13 @@ function DoneScreen({ retour, onNew }: { retour: Retour; onNew: () => void }) {
   const cust = customerById(retour.customerId);
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl bg-emerald-50 p-6 text-center">
+      <div className="rounded-2xl bg-success/10 p-6 text-center">
         <div className="text-5xl">✓</div>
-        <h1 className="mt-2 text-2xl font-bold text-emerald-900">Ontvangen</h1>
-        <div className="mt-1 text-sm text-emerald-800">{retour.retourNumber}</div>
+        <h1 className="mt-2 text-2xl font-bold text-success">Ontvangen</h1>
+        <div className="mt-1 text-sm text-success">{retour.retourNumber}</div>
       </div>
 
-      <div className="space-y-2 rounded-2xl bg-white p-5">
+      <div className="space-y-2 rounded-2xl bg-card p-5">
         <Row label="Klant" value={cust?.naam ?? "—"} />
         <Row label="Klantnummer" value={cust?.id ?? "—"} />
         <Row label="Pallets" value={String(t.count)} />
@@ -1342,7 +1341,7 @@ function DoneScreen({ retour, onNew }: { retour: Retour; onNew: () => void }) {
 
       <button
         onClick={onNew}
-        className="h-16 w-full rounded-2xl bg-red-700 text-lg font-semibold text-white shadow"
+        className="h-16 w-full rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow"
       >
         Nieuwe retour
       </button>
@@ -1353,7 +1352,7 @@ function DoneScreen({ retour, onNew }: { retour: Retour; onNew: () => void }) {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-neutral-600">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className={`tabular-nums ${strong ? "text-lg font-bold" : "font-medium"}`}>{value}</span>
     </div>
   );

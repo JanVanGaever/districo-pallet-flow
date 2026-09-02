@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedUrl, STATUS_LABEL, PalletStatus, AuditEvent } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
-import { X, Check, Building2, Factory } from "lucide-react";
+import { X, Check, Building2, Factory, ArrowUp, ArrowDown, ArrowUpDown, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kantoor")({

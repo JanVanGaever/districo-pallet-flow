@@ -81,12 +81,20 @@ function MagazijnPage() {
             <p className="mt-8 text-xs text-muted-foreground">
               Tip: de telefooncamera kan de QR ook rechtstreeks openen, want die bevat de directe link naar de pallet.
             </p>
-            <Link
-              to="/magazijn/catalogus"
-              className="mt-8 inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium hover:border-primary"
-            >
-              <BookOpen className="size-4" /> Waardecatalogus openen
-            </Link>
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <Link
+                to="/magazijn/catalogus"
+                className="inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium hover:border-primary"
+              >
+                <BookOpen className="size-4" /> Waardecatalogus openen
+              </Link>
+              <Link
+                to="/magazijn/v2"
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-sm font-medium hover:border-primary"
+              >
+                <ScanLine className="size-4" /> Nieuwe magazijnierflow (demo)
+              </Link>
+            </div>
 
             {/* Demo-bypass: pallet openen zonder camera/QR */}
             <div className="mt-10 rounded-2xl border border-dashed bg-muted/30 p-4 text-left">

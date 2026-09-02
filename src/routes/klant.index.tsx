@@ -18,6 +18,7 @@ import {
   addLeeggoedPalletToRetour,
   addLegePalletsToRetour,
   removePalletFromRetour,
+  palletKlantStatus,
   deleteConceptRetour,
   submitRetour,
 } from "@/lib/districo";

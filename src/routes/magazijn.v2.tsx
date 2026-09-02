@@ -26,6 +26,7 @@ import { Coach } from "@/lib/magazijn-v2/Coach";
 
 
 export const Route = createFileRoute("/magazijn/v2")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Districo — Leeggoed ontvangen" },

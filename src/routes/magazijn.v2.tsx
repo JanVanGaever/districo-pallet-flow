@@ -6,13 +6,15 @@ import {
   CUSTOMERS,
   EXPECTED_TODAY,
   PRODUCTS,
+  customerById,
+  loadCatalog,
+  productCats,
   declaredForPallet,
   eur,
   linesValue,
   nextPalletNumber,
   nextRetourNumber,
   palletValue,
-  type Customer,
   type Pallet,
   type PalletLine,
   type PalletType,
@@ -50,16 +52,18 @@ type Screen =
   | { name: "confirm" }
   | { name: "done"; retour: Retour };
 
-const CUSTOMER_BY_ID = Object.fromEntries(CUSTOMERS.map((c) => [c.id, c])) as Record<string, Customer>;
-
 function App() {
   const [screen, setScreen] = useState<Screen>({ name: "start" });
   const [retour, setRetour] = useState<Retour | null>(null);
   const [preGen, setPreGen] = useState<string[]>([]);
   const [demo, setDemo] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setDemo(window.localStorage.getItem("districo-demo") === "1");
+    loadCatalog()
+      .catch(() => undefined)
+      .finally(() => setReady(true));
   }, []);
 
   const toggleDemo = () => {
@@ -178,7 +182,7 @@ function TopBar({
   onToggleDemo: () => void;
 }) {
   const t = totals(retour);
-  const cust = retour ? CUSTOMER_BY_ID[retour.customerId] : null;
+  const cust = retour ? customerById(retour.customerId) : null;
   return (
     <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3 [font-variant-numeric:tabular-nums]">
@@ -253,7 +257,7 @@ function StartScreen({
       <h1 className="text-2xl font-bold">Verwacht vandaag</h1>
       <ul className="space-y-2">
         {EXPECTED_TODAY.map((e, idx) => {
-          const c = CUSTOMER_BY_ID[e.id];
+          const c = customerById(e.id);
           if (!c) return null;
           return (
             <li key={e.order}>
@@ -926,7 +930,7 @@ function AddPalletScreen({
               <div className="space-y-3 rounded-xl border-2 border-neutral-300 bg-white p-4">
                 <div className="text-sm font-semibold">Product toevoegen</div>
                 <div className="flex flex-wrap gap-2">
-                  {["Alle", "Pils", "Frisdrank", "Water", "Speciaal"].map((c) => (
+                  {productCats().map((c) => (
                     <button
                       key={c}
                       onClick={() => setCat(c)}
@@ -1302,7 +1306,7 @@ function Stat({ label, value, color }: { label: string; value: number; color: "e
 
 function DoneScreen({ retour, onNew }: { retour: Retour; onNew: () => void }) {
   const t = totals(retour);
-  const cust = CUSTOMER_BY_ID[retour.customerId];
+  const cust = customerById(retour.customerId);
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-emerald-50 p-6 text-center">

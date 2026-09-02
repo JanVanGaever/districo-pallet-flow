@@ -253,7 +253,7 @@ function StartScreen({
                 {...(idx === 0 ? { "data-coach": "Kies een klant", "data-coach-order": "0" } : {})}
                 className="flex w-full items-center gap-4 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left shadow-sm transition active:bg-neutral-50"
               >
-                <div className="w-16 shrink-0 text-lg font-bold tabular-nums text-red-700">{e.tijd}</div>
+                
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-lg font-semibold">{c.naam}</div>
                   <div className="truncate text-sm text-neutral-500">

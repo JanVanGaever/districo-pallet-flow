@@ -455,9 +455,9 @@ function Wizard({
     });
   }
 
-  function setMixBakken(p: Product, n: number) {
+  function setMixBakken(p: Product, n: number, removeAtZero = true) {
     const val = Math.max(0, Math.min(99, Math.round(n || 0)));
-    if (val === 0) {
+    if (val === 0 && removeAtZero) {
       setMixSelected((prev) => prev.filter((x) => x.id !== p.id));
       setMixQty((q) => {
         const { [p.id]: _drop, ...rest } = q;
@@ -467,6 +467,7 @@ function Wizard({
     }
     setMixQty((q) => ({ ...q, [p.id]: val }));
   }
+
 
   const mixTotaalBakken = mixSelected.reduce((s, p) => s + (mixQty[p.id] ?? 0), 0);
   const mixOmschrijving = mixSelected.map((p) => `${mixQty[p.id] ?? 0}× ${p.naam}`).join(", ");
@@ -711,9 +712,12 @@ function Wizard({
                           <Input
                             className="h-7 w-14 text-center"
                             inputMode="numeric"
-                            value={n}
-                            onChange={(e) => setMixBakken(p, Number(e.target.value.replace(/\D/g, "")))}
+                            value={n === 0 ? "" : String(n)}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onChange={(e) => setMixBakken(p, Number(e.target.value.replace(/\D/g, "")), false)}
+                            onBlur={() => { if ((mixQty[p.id] ?? 0) === 0) setMixBakken(p, 1, false); }}
                           />
+
                           <Button type="button" variant="outline" size="icon" className="size-7" onClick={() => setMixBakken(p, n + 1)}>+</Button>
                           <span className="ml-1 text-xs text-muted-foreground">bakken</span>
                         </div>

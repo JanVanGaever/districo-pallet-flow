@@ -49,6 +49,27 @@ export function SignaturePad({ onChange }: Props) {
     drawing.current = false;
   };
 
+  const simulate = () => {
+    const c = canvasRef.current!;
+    const ctx = c.getContext("2d")!;
+    const r = c.getBoundingClientRect();
+    const w = r.width;
+    const h = r.height;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.15, h * 0.65);
+    ctx.bezierCurveTo(w * 0.25, h * 0.25, w * 0.35, h * 0.85, w * 0.45, h * 0.45);
+    ctx.bezierCurveTo(w * 0.52, h * 0.2, w * 0.58, h * 0.8, w * 0.68, h * 0.5);
+    ctx.bezierCurveTo(w * 0.75, h * 0.3, w * 0.8, h * 0.7, w * 0.88, h * 0.55);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(w * 0.2, h * 0.78);
+    ctx.lineTo(w * 0.8, h * 0.72);
+    ctx.stroke();
+    setHas(true);
+    onChange(true);
+  };
+
   const clear = () => {
     const c = canvasRef.current!;
     const ctx = c.getContext("2d")!;
@@ -67,7 +88,13 @@ export function SignaturePad({ onChange }: Props) {
         onPointerLeave={end}
         className="block h-48 w-full touch-none rounded-xl border-2 border-dashed border-neutral-300 bg-white"
       />
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex justify-end gap-2">
+        <button
+          onClick={simulate}
+          className="h-10 rounded-lg border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
+        >
+          Handtekening simuleren
+        </button>
         <button
           onClick={clear}
           className="h-10 rounded-lg border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"

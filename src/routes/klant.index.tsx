@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   CATEGORIES,
   CartLine,
@@ -18,13 +18,14 @@ import {
   addLeeggoedPalletToRetour,
   addLegePalletsToRetour,
   removePalletFromRetour,
+  palletKlantStatus,
   deleteConceptRetour,
   submitRetour,
 } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Box, Settings, Truck } from "lucide-react";
+import { Minus, Plus, Trash2, Check, ArrowLeft, Pencil, FileText, Package, Layers, Boxes, Box, Settings, Truck, CheckCircle2, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { CatChips, FavStar, groupProducts, pickerCatLabel } from "@/components/ProductFilters";
 
@@ -61,6 +62,29 @@ const catSlot: Record<string, string> = {
 
 
 
+const statusMeta = {
+  opgemaakt: { label: "Opgemaakt", cls: "bg-muted text-muted-foreground border-border", Icon: Clock },
+  geleverd: { label: "Geleverd", cls: "bg-primary/10 text-primary border-primary/30", Icon: Truck },
+  gecrediteerd: { label: "Gecrediteerd", cls: "bg-success/15 text-success border-success/40", Icon: CheckCircle2 },
+} as const;
+
+function PalletStatusBadge({ status }: { status: keyof typeof statusMeta }) {
+  const m = statusMeta[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${m.cls}`}>
+      <m.Icon className="size-3.5" /> {m.label}
+    </span>
+  );
+}
+
+function palletOmschrijving(p: any) {
+  if (p.soort === "mixed") return p.inhoud || "Gemixte pallet";
+  if (p.soort === "lege_bakken") return "Lege bakken";
+  if (p.soort === "lege_flesjes") return "Lege flesjes";
+  if (p.soort === "lege_pallet") return "Lege pallet";
+  return p.products?.naam ?? "Volle pallet";
+}
+
 function KlantPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -73,6 +97,7 @@ function KlantPage() {
     enabled: !!customer,
   });
 
+  const [openRetour, setOpenRetour] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [conceptId, setConceptId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -216,32 +241,65 @@ function KlantPage() {
                   <th className="px-5 py-3 font-medium">Retournummer</th>
                   <th className="px-5 py-3 font-medium">Datum</th>
                   <th className="px-5 py-3 font-medium">Pallets</th>
-                  <th className="px-5 py-3 font-medium">Ontvangen</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
                 {ingediend.map((r) => {
                   const pl = r.pallets ?? [];
-                  const ontv = pl.filter((p: any) => p.status === "ontvangen").length;
+                  const open = openRetour === r.id;
+                  const statuses = pl.map((p: any) => palletKlantStatus(p, r));
+                  const gecred = statuses.filter((s) => s === "gecrediteerd").length;
+                  const gelev = statuses.filter((s) => s === "geleverd").length;
                   return (
-                    <tr key={r.id} className="border-t">
-                      <td className="px-5 py-3 font-medium">{r.retournummer}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
-                      <td className="px-5 py-3">{pl.length}</td>
-                      <td className="px-5 py-3">{ontv} / {pl.length}</td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="inline-flex items-center gap-4">
-                          <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> Document
-                          </Link>
-                          <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> QR-codes
-                          </Link>
-                        </div>
-                      </td>
-
-                    </tr>
+                    <Fragment key={r.id}>
+                      <tr key={r.id} className="cursor-pointer border-t hover:bg-accent/40" onClick={() => setOpenRetour(open ? null : r.id)}>
+                        <td className="px-5 py-3 font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            {r.retournummer}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
+                        <td className="px-5 py-3">{pl.length}</td>
+                        <td className="px-5 py-3">
+                          <PalletStatusBadge status={gecred === pl.length && pl.length > 0 ? "gecrediteerd" : gelev + gecred > 0 ? "geleverd" : "opgemaakt"} />
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="inline-flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                            <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                              <FileText className="size-4" /> Document
+                            </Link>
+                            <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                              <FileText className="size-4" /> QR-codes
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                      {open && (
+                        <tr key={r.id + "-detail"} className="border-t bg-muted/30">
+                          <td colSpan={5} className="px-5 py-3">
+                            {pl.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Geen pallets.</p>
+                            ) : (
+                              <ul className="divide-y">
+                                {pl.map((p: any, i: number) => (
+                                  <li key={p.id} className="flex items-center justify-between gap-3 py-2">
+                                    <span className="text-sm">
+                                      <span className="text-muted-foreground">#{p.positie ?? i + 1}</span>{" "}
+                                      <span className="font-medium">{palletOmschrijving(p)}</span>
+                                      {p.pallet_types?.naam && <span className="text-muted-foreground"> · {p.pallet_types.naam}</span>}
+                                    </span>
+                                    <PalletStatusBadge status={palletKlantStatus(p, r)} />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>

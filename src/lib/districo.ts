@@ -275,8 +275,22 @@ export type RetourWithPallets = {
   retournummer: string;
   status: string;
   created_at: string;
+  creditnota_nummer?: string | null;
+  creditnota_at?: string | null;
   pallets: any[];
 };
+
+/** Status van één pallet vanuit klantperspectief. */
+export type KlantPalletStatus = "opgemaakt" | "geleverd" | "gecrediteerd";
+
+export function palletKlantStatus(
+  pallet: { status?: string | null },
+  retour?: { creditnota_nummer?: string | null } | null,
+): KlantPalletStatus {
+  if (retour?.creditnota_nummer) return "gecrediteerd";
+  if (pallet.status === "ontvangen") return "geleverd";
+  return "opgemaakt";
+}
 
 export async function fetchDefaultCustomer(): Promise<Customer> {
   const { data, error } = await supabase

@@ -53,7 +53,8 @@ function bakkenXFlesjes(p: any): string {
     p.pallet_types?.standaard_bakken ??
     null;
   const flesjes = p.products.aantal_per_bak ?? null;
-  if (!bakken || !flesjes) return "—";
+  if (!bakken) return "—";
+  if (!flesjes) return `${bakken} bakken`;
   return `${bakken} x ${flesjes}`;
 }
 

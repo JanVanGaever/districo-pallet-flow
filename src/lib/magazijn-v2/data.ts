@@ -3,13 +3,13 @@ export type Expected = { id: string; order: string; tijd: string };
 export type Product = {
   id: string;
   naam: string;
-  cat: "Pils" | "Frisdrank" | "Water" | "Speciaal";
+  cat: string;
   verp: string;
   bak: number;
   perPallet: number;
 };
 
-export const CUSTOMERS: Customer[] = [
+export let CUSTOMERS: Customer[] = [
   { id: "K-1012", naam: "Drankencentrale Decuypere", plaats: "Harelbeke" },
   { id: "K-1027", naam: "Drankenhandel Lezy", plaats: "Sint-Eloois-Winkel" },
   { id: "K-1034", naam: "Magazijn Drinxit David", plaats: "Nieuwkerke" },
@@ -24,7 +24,7 @@ export const CUSTOMERS: Customer[] = [
   { id: "K-1090", naam: "'t Swinneke", plaats: "" },
 ];
 
-export const EXPECTED_TODAY: Expected[] = [
+export let EXPECTED_TODAY: Expected[] = [
   { id: "K-1012", order: "O-24881", tijd: "08:30" },
   { id: "K-1027", order: "O-24890", tijd: "09:15" },
   { id: "K-1085", order: "O-24893", tijd: "10:00" },
@@ -34,7 +34,7 @@ export const EXPECTED_TODAY: Expected[] = [
   { id: "K-1041", order: "O-24931", tijd: "15:45" },
 ];
 
-export const PRODUCTS: Product[] = [
+export let PRODUCTS: Product[] = [
   { id: "p01", naam: "Jupiler", cat: "Pils", verp: "bak 24x25cl", bak: 3.72, perPallet: 40 },
   { id: "p02", naam: "Maes", cat: "Pils", verp: "bak 24x25cl", bak: 3.72, perPallet: 40 },
   { id: "p03", naam: "Stella Artois", cat: "Pils", verp: "bak 24x25cl", bak: 3.72, perPallet: 40 },
@@ -136,3 +136,89 @@ let retourSeq = 1;
 const pad = (n: number) => String(n).padStart(5, "0");
 export const nextPalletNumber = () => `PAL-2026-${pad(palletSeq++)}`;
 export const nextRetourNumber = () => `RET-2026-${pad(retourSeq++)}`;
+
+/* ---------- Live data uit de database ---------- */
+
+export const customerById = (id: string): Customer | undefined =>
+  CUSTOMERS.find((c) => c.id === id);
+
+export const productCats = (): string[] => {
+  const set = new Set<string>();
+  for (const p of PRODUCTS) if (p.cat) set.add(p.cat);
+  return ["Alle", ...[...set].sort()];
+};
+
+let loaded = false;
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "Andere");
+
+/** Laadt klanten, producten en verwachte retours uit de database (eenmalig). */
+export async function loadCatalog(): Promise<void> {
+  if (loaded) return;
+  const { supabase } = await import("@/integrations/supabase/client");
+
+  const { data: custRows } = await supabase
+    .from("customers")
+    .select("id, naam, klantnummer, plaats")
+    .order("naam");
+
+  if (custRows?.length) {
+    CUSTOMERS = custRows.map((c: any) => ({
+      id: c.klantnummer || c.id,
+      naam: c.naam,
+      plaats: c.plaats ?? "",
+    }));
+  }
+
+  const all: any[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        "id, naam, categorie, verpakkingstype, inhoud, leeggoedwaarde_per_bak, bakken_per_europallet, favoriet",
+      )
+      .order("favoriet", { ascending: false })
+      .order("naam")
+      .range(from, from + PAGE - 1);
+    if (error) break;
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  if (all.length) {
+    PRODUCTS = all.map((p) => ({
+      id: p.id as string,
+      naam: p.naam as string,
+      cat: cap((p.categorie as string) || "andere"),
+      verp: [p.verpakkingstype, p.inhoud].filter(Boolean).join(" ") || "—",
+      bak: Number(p.leeggoedwaarde_per_bak ?? 0),
+      perPallet: Number(p.bakken_per_europallet ?? 48),
+    }));
+  }
+
+  const { data: retRows } = await supabase
+    .from("retours")
+    .select("retournummer, created_at, customers(klantnummer, naam)")
+    .eq("status", "open")
+    .eq("type", "klant")
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  const expected = (retRows ?? [])
+    .filter((r: any) => r.customers?.klantnummer)
+    .map((r: any) => ({
+      id: r.customers.klantnummer as string,
+      order: r.retournummer as string,
+      tijd: "",
+    }));
+  if (expected.length) EXPECTED_TODAY = expected;
+  else if (CUSTOMERS.length)
+    EXPECTED_TODAY = CUSTOMERS.slice(0, 6).map((c, i) => ({
+      id: c.id,
+      order: `O-${25000 + i}`,
+      tijd: "",
+    }));
+
+  loaded = true;
+}

@@ -62,6 +62,29 @@ const catSlot: Record<string, string> = {
 
 
 
+const statusMeta = {
+  opgemaakt: { label: "Opgemaakt", cls: "bg-muted text-muted-foreground border-border", Icon: Clock },
+  geleverd: { label: "Geleverd", cls: "bg-primary/10 text-primary border-primary/30", Icon: Truck },
+  gecrediteerd: { label: "Gecrediteerd", cls: "bg-success/15 text-success border-success/40", Icon: CheckCircle2 },
+} as const;
+
+function PalletStatusBadge({ status }: { status: keyof typeof statusMeta }) {
+  const m = statusMeta[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${m.cls}`}>
+      <m.Icon className="size-3.5" /> {m.label}
+    </span>
+  );
+}
+
+function palletOmschrijving(p: any) {
+  if (p.soort === "mixed") return p.inhoud || "Gemixte pallet";
+  if (p.soort === "lege_bakken") return "Lege bakken";
+  if (p.soort === "lege_flesjes") return "Lege flesjes";
+  if (p.soort === "lege_pallet") return "Lege pallet";
+  return p.products?.naam ?? "Volle pallet";
+}
+
 function KlantPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();

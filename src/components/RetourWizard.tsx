@@ -330,9 +330,16 @@ export function RetourWizard({
 
   return (
     <div className="rounded-xl border bg-card p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold">Lopende retour bewerken</h2>
-        <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">Sluiten</button>
+        <div className="flex items-center gap-3">
+          {soort === "mixed" && (
+            <Button size="sm" onClick={addMixed} disabled={mixSelected.length < 2 || mixTotaalBakken === 0 || working}>
+              Toevoegen aan retour
+            </Button>
+          )}
+          <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">Sluiten</button>
+        </div>
       </div>
 
       {soort && (

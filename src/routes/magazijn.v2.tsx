@@ -190,16 +190,15 @@ function TopBar({
   const cust = retour ? customerById(retour.customerId) : null;
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-card">
-      <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3 [font-variant-numeric:tabular-nums]">
-        <Link
-          to="/"
-          aria-label="Terug naar hoofdmenu"
-          title="Terug naar hoofdmenu"
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-        >
+      <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 [font-variant-numeric:tabular-nums]">
+        <Link to="/" aria-label="Terug naar hoofdmenu" title="Terug naar hoofdmenu" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-5" />
         </Link>
-        <div className="text-xl font-black tracking-tight text-primary">DISTRICO</div>
+        <div className="size-8 shrink-0 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold text-sm">D</div>
+        <div className="shrink-0">
+          <p className="text-sm font-semibold leading-tight">Magazijnier</p>
+          <p className="text-xs text-muted-foreground">Districo Retour</p>
+        </div>
         {retour && cust ? (
           <div className="flex flex-1 items-center justify-between gap-4 text-sm">
             <div className="min-w-0">

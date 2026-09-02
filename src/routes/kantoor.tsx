@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedUrl, STATUS_LABEL, PalletStatus, AuditEvent } from "@/lib/districo";
 import { AppHeader } from "@/components/AppHeader";
-import { X, Check, Building2, Factory } from "lucide-react";
+import { X, Check, Building2, Factory, ArrowUp, ArrowDown, ArrowUpDown, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kantoor")({
@@ -253,11 +253,59 @@ function CreditnotaCell({
   );
 }
 
+type SortKey = "datum" | "partij" | "retournummer" | "pallets" | "waarde" | "status";
+
+function SortHeader({
+  label,
+  sortKey,
+  active,
+  dir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKey: SortKey;
+  active: SortKey;
+  dir: "asc" | "desc";
+  onSort: (k: SortKey) => void;
+  align?: "left" | "right";
+}) {
+  const isActive = active === sortKey;
+  return (
+    <th className={`px-4 py-3 font-medium ${align === "right" ? "text-right" : "text-left"}`}>
+      <button
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-foreground ${isActive ? "text-foreground" : ""}`}
+      >
+        {label}
+        {isActive ? (
+          dir === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />
+        ) : (
+          <ArrowUpDown className="size-3.5 opacity-40" />
+        )}
+      </button>
+    </th>
+  );
+}
+
 function KantoorPage() {
   const qc = useQueryClient();
   const { data: rows } = useQuery({ queryKey: ["kantoor-rows"], queryFn: fetchRows });
   const [selectedRetour, setSelectedRetour] = useState<string | null>(null);
   const [tab, setTab] = useState<"klant" | "leverancier">("klant");
+  const [zoek, setZoek] = useState("");
+  const [periode, setPeriode] = useState<"alles" | "7" | "30" | "90">("alles");
+  const [statusFilter, setStatusFilter] = useState<"alles" | "open" | "gecrediteerd">("alles");
+  const [sortKey, setSortKey] = useState<SortKey>("datum");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function toggleSort(k: SortKey) {
+    if (k === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "partij" || k === "retournummer" ? "asc" : "desc");
+    }
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -277,12 +325,59 @@ function KantoorPage() {
     };
   }, [qc]);
 
-  const alle = groupByRetour(rows ?? []).sort(
-    (a, b) => new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime(),
-  );
+  const alle = groupByRetour(rows ?? []);
   const klanten = alle.filter((g) => g.soort === "klant");
   const leveranciers = alle.filter((g) => g.soort === "leverancier");
-  const retours = tab === "klant" ? klanten : leveranciers;
+
+  const basis = tab === "klant" ? klanten : leveranciers;
+
+  const q = zoek.trim().toLowerCase();
+  const grens = periode === "alles" ? null : Date.now() - Number(periode) * 86400000;
+  const gefilterd = basis.filter((g) => {
+    if (grens && new Date(g.laatsteActiviteit).getTime() < grens) return false;
+    if (statusFilter === "open" && g.creditnotaNummer) return false;
+    if (statusFilter === "gecrediteerd" && !g.creditnotaNummer) return false;
+    if (!q) return true;
+    return (
+      g.partijNaam.toLowerCase().includes(q) ||
+      g.partijSub.toLowerCase().includes(q) ||
+      g.retournummer.toLowerCase().includes(q) ||
+      (g.creditnotaNummer ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const collator = new Intl.Collator("nl-BE", { sensitivity: "base", numeric: true });
+  const statusRang = (g: RetourGroup) => (g.ontvangen === 0 ? 0 : g.ontvangen < g.totaal ? 1 : 2);
+  const retours = gefilterd.slice().sort((a, b) => {
+    const factor = sortDir === "asc" ? 1 : -1;
+    let cmp = 0;
+    switch (sortKey) {
+      case "datum":
+        cmp = new Date(a.laatsteActiviteit).getTime() - new Date(b.laatsteActiviteit).getTime();
+        break;
+      case "partij":
+        // Sorteren op klant/leverancier, daarbinnen altijd nieuwste retour eerst
+        cmp = collator.compare(a.partijNaam, b.partijNaam);
+        if (cmp === 0)
+          return new Date(b.laatsteActiviteit).getTime() - new Date(a.laatsteActiviteit).getTime();
+        break;
+      case "retournummer":
+        cmp = collator.compare(a.retournummer, b.retournummer);
+        break;
+      case "pallets":
+        cmp = a.totaal - b.totaal;
+        break;
+      case "waarde":
+        cmp = a.waarde - b.waarde;
+        break;
+      case "status":
+        cmp = statusRang(a) - statusRang(b);
+        if (cmp === 0) cmp = a.ontvangen / a.totaal - b.ontvangen / b.totaal;
+        break;
+    }
+    if (cmp === 0) cmp = new Date(a.laatsteActiviteit).getTime() - new Date(b.laatsteActiviteit).getTime();
+    return cmp * factor;
+  });
 
   const totals = (list: RetourGroup[]) => {
     const waarde = list.reduce((s, g) => s + g.waarde, 0);
@@ -298,6 +393,7 @@ function KantoorPage() {
   const t = totals(retours);
   const tk = totals(klanten);
   const tl = totals(leveranciers);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -363,38 +459,102 @@ function KantoorPage() {
           <KpiCard label="Totale leeggoedwaarde" value={euro(t.waarde)} sub={`Open: ${euro(t.openWaarde)}`} />
         </div>
 
+        {/* Slimme filters */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-56 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={zoek}
+              onChange={(e) => setZoek(e.target.value)}
+              placeholder={`Zoek op ${tab === "klant" ? "klant" : "leverancier"}, retour- of creditnotanummer…`}
+              className="w-full rounded-lg border bg-background py-2 pl-9 pr-3 text-sm"
+            />
+          </div>
+          <select
+            value={periode}
+            onChange={(e) => setPeriode(e.target.value as typeof periode)}
+            className="rounded-lg border bg-background px-3 py-2 text-sm"
+          >
+            <option value="alles">Alle periodes</option>
+            <option value="7">Laatste 7 dagen</option>
+            <option value="30">Laatste 30 dagen</option>
+            <option value="90">Laatste 90 dagen</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="rounded-lg border bg-background px-3 py-2 text-sm"
+          >
+            <option value="alles">Alle creditnota's</option>
+            <option value="open">Nog te crediteren</option>
+            <option value="gecrediteerd">Gecrediteerd</option>
+          </select>
+          {(zoek || periode !== "alles" || statusFilter !== "alles") && (
+            <button
+              onClick={() => {
+                setZoek("");
+                setPeriode("alles");
+                setStatusFilter("alles");
+              }}
+              className="rounded-lg border px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              Wis filters
+            </button>
+          )}
+          <button
+            onClick={() => toggleSort("partij")}
+            className={`rounded-lg border px-3 py-2 text-sm ${sortKey === "partij" ? "border-primary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Groepeer per {tab === "klant" ? "klant" : "leverancier"}
+          </button>
+        </div>
+
         <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 font-medium">Retournummer</th>
-                <th className="px-4 py-3 font-medium">{tab === "klant" ? "Klant" : "Leverancier"}</th>
-                <th className="px-4 py-3 font-medium">Pallets</th>
+                <SortHeader label="Datum" sortKey="datum" active={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Retournummer" sortKey="retournummer" active={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader
+                  label={tab === "klant" ? "Klant" : "Leverancier"}
+                  sortKey="partij"
+                  active={sortKey}
+                  dir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortHeader label="Pallets" sortKey="pallets" active={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th className="px-4 py-3 font-medium">Ontvangen</th>
-                <th className="px-4 py-3 text-right font-medium">Waarde</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <SortHeader label="Waarde" sortKey="waarde" active={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
+                <SortHeader label="Status" sortKey="status" active={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th className="px-4 py-3 font-medium">{tab === "klant" ? "Creditnota" : "Creditnota leverancier"}</th>
               </tr>
             </thead>
+
             <tbody>
               {retours.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                    Nog geen retours.
+                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    Geen retours voor deze filters.
                   </td>
                 </tr>
               ) : (
-                retours.map((g) => (
+                retours.map((g, i) => {
+                  const nieuweKlant = sortKey === "partij" && (i === 0 || retours[i - 1].partijNaam !== g.partijNaam);
+                  return (
                   <tr
                     key={g.retourId}
-                    className="cursor-pointer border-t hover:bg-accent/30"
+                    className={`cursor-pointer border-t hover:bg-accent/30 ${nieuweKlant && i > 0 ? "border-t-2 border-t-border" : ""}`}
                     onClick={() => setSelectedRetour(g.retourId)}
                   >
+                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">
+                      {new Date(g.laatsteActiviteit).toLocaleDateString("nl-BE", { day: "2-digit", month: "short", year: "numeric" })}
+                    </td>
                     <td className="px-4 py-3 font-medium">{g.retournummer}</td>
                     <td className="px-4 py-3">
                       <div>{g.partijNaam}</div>
                       <div className="text-xs text-muted-foreground">{g.partijSub}</div>
                     </td>
+
                     <td className="px-4 py-3">{g.totaal}</td>
                     <td className="px-4 py-3">
                       {g.ontvangen} / {g.totaal}
@@ -410,13 +570,15 @@ function KantoorPage() {
                       />
                     </td>
                   </tr>
-                ))
+                  );
+                })
+
               )}
             </tbody>
             {retours.length > 0 && (
               <tfoot>
                 <tr className="border-t bg-muted/40 font-medium">
-                  <td className="px-4 py-3" colSpan={2}>
+                  <td className="px-4 py-3" colSpan={3}>
                     Totaal {tab === "klant" ? "klanten" : "leveranciers"}
                   </td>
                   <td className="px-4 py-3">{t.pallets}</td>

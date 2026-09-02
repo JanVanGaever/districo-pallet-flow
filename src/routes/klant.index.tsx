@@ -240,32 +240,65 @@ function KlantPage() {
                   <th className="px-5 py-3 font-medium">Retournummer</th>
                   <th className="px-5 py-3 font-medium">Datum</th>
                   <th className="px-5 py-3 font-medium">Pallets</th>
-                  <th className="px-5 py-3 font-medium">Ontvangen</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
                 {ingediend.map((r) => {
                   const pl = r.pallets ?? [];
-                  const ontv = pl.filter((p: any) => p.status === "ontvangen").length;
+                  const open = openRetour === r.id;
+                  const statuses = pl.map((p: any) => palletKlantStatus(p, r));
+                  const gecred = statuses.filter((s) => s === "gecrediteerd").length;
+                  const gelev = statuses.filter((s) => s === "geleverd").length;
                   return (
-                    <tr key={r.id} className="border-t">
-                      <td className="px-5 py-3 font-medium">{r.retournummer}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
-                      <td className="px-5 py-3">{pl.length}</td>
-                      <td className="px-5 py-3">{ontv} / {pl.length}</td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="inline-flex items-center gap-4">
-                          <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> Document
-                          </Link>
-                          <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                            <FileText className="size-4" /> QR-codes
-                          </Link>
-                        </div>
-                      </td>
-
-                    </tr>
+                    <>
+                      <tr key={r.id} className="cursor-pointer border-t hover:bg-accent/40" onClick={() => setOpenRetour(open ? null : r.id)}>
+                        <td className="px-5 py-3 font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            {r.retournummer}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
+                        <td className="px-5 py-3">{pl.length}</td>
+                        <td className="px-5 py-3">
+                          <PalletStatusBadge status={gecred === pl.length && pl.length > 0 ? "gecrediteerd" : gelev + gecred > 0 ? "geleverd" : "opgemaakt"} />
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="inline-flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                            <Link to="/klant/document/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                              <FileText className="size-4" /> Document
+                            </Link>
+                            <Link to="/klant/print/$retourId" params={{ retourId: r.id }} className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                              <FileText className="size-4" /> QR-codes
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                      {open && (
+                        <tr key={r.id + "-detail"} className="border-t bg-muted/30">
+                          <td colSpan={5} className="px-5 py-3">
+                            {pl.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">Geen pallets.</p>
+                            ) : (
+                              <ul className="divide-y">
+                                {pl.map((p: any, i: number) => (
+                                  <li key={p.id} className="flex items-center justify-between gap-3 py-2">
+                                    <span className="text-sm">
+                                      <span className="text-muted-foreground">#{p.positie ?? i + 1}</span>{" "}
+                                      <span className="font-medium">{palletOmschrijving(p)}</span>
+                                      {p.pallet_types?.naam && <span className="text-muted-foreground"> · {p.pallet_types.naam}</span>}
+                                    </span>
+                                    <PalletStatusBadge status={palletKlantStatus(p, r)} />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })}
               </tbody>

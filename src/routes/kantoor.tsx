@@ -459,19 +459,77 @@ function KantoorPage() {
           <KpiCard label="Totale leeggoedwaarde" value={euro(t.waarde)} sub={`Open: ${euro(t.openWaarde)}`} />
         </div>
 
+        {/* Slimme filters */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-56 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={zoek}
+              onChange={(e) => setZoek(e.target.value)}
+              placeholder={`Zoek op ${tab === "klant" ? "klant" : "leverancier"}, retour- of creditnotanummer…`}
+              className="w-full rounded-lg border bg-background py-2 pl-9 pr-3 text-sm"
+            />
+          </div>
+          <select
+            value={periode}
+            onChange={(e) => setPeriode(e.target.value as typeof periode)}
+            className="rounded-lg border bg-background px-3 py-2 text-sm"
+          >
+            <option value="alles">Alle periodes</option>
+            <option value="7">Laatste 7 dagen</option>
+            <option value="30">Laatste 30 dagen</option>
+            <option value="90">Laatste 90 dagen</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="rounded-lg border bg-background px-3 py-2 text-sm"
+          >
+            <option value="alles">Alle creditnota's</option>
+            <option value="open">Nog te crediteren</option>
+            <option value="gecrediteerd">Gecrediteerd</option>
+          </select>
+          {(zoek || periode !== "alles" || statusFilter !== "alles") && (
+            <button
+              onClick={() => {
+                setZoek("");
+                setPeriode("alles");
+                setStatusFilter("alles");
+              }}
+              className="rounded-lg border px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              Wis filters
+            </button>
+          )}
+          <button
+            onClick={() => toggleSort("partij")}
+            className={`rounded-lg border px-3 py-2 text-sm ${sortKey === "partij" ? "border-primary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Groepeer per {tab === "klant" ? "klant" : "leverancier"}
+          </button>
+        </div>
+
         <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 font-medium">Retournummer</th>
-                <th className="px-4 py-3 font-medium">{tab === "klant" ? "Klant" : "Leverancier"}</th>
-                <th className="px-4 py-3 font-medium">Pallets</th>
+                <SortHeader label="Datum" sortKey="datum" active={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Retournummer" sortKey="retournummer" active={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader
+                  label={tab === "klant" ? "Klant" : "Leverancier"}
+                  sortKey="partij"
+                  active={sortKey}
+                  dir={sortDir}
+                  onSort={toggleSort}
+                />
+                <SortHeader label="Pallets" sortKey="pallets" active={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th className="px-4 py-3 font-medium">Ontvangen</th>
-                <th className="px-4 py-3 text-right font-medium">Waarde</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <SortHeader label="Waarde" sortKey="waarde" active={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
+                <SortHeader label="Status" sortKey="status" active={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th className="px-4 py-3 font-medium">{tab === "klant" ? "Creditnota" : "Creditnota leverancier"}</th>
               </tr>
             </thead>
+
             <tbody>
               {retours.length === 0 ? (
                 <tr>

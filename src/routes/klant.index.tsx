@@ -97,6 +97,7 @@ function KlantPage() {
     enabled: !!customer,
   });
 
+  const [openRetour, setOpenRetour] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [conceptId, setConceptId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

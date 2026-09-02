@@ -17,6 +17,7 @@ import { Route as KantoorRouteImport } from './routes/kantoor'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KlantIndexRouteImport } from './routes/klant.index'
+import { Route as MagazijnV2RouteImport } from './routes/magazijn.v2'
 import { Route as MagazijnCatalogusRouteImport } from './routes/magazijn.catalogus'
 import { Route as MagazijnPalletIdRouteImport } from './routes/magazijn.pallet.$id'
 import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
@@ -62,6 +63,11 @@ const KlantIndexRoute = KlantIndexRouteImport.update({
   path: '/',
   getParentRoute: () => KlantRoute,
 } as any)
+const MagazijnV2Route = MagazijnV2RouteImport.update({
+  id: '/v2',
+  path: '/v2',
+  getParentRoute: () => MagazijnRoute,
+} as any)
 const MagazijnCatalogusRoute = MagazijnCatalogusRouteImport.update({
   id: '/catalogus',
   path: '/catalogus',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
+  '/magazijn/v2': typeof MagazijnV2Route
   '/klant/': typeof KlantIndexRoute
   '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
+  '/magazijn/v2': typeof MagazijnV2Route
   '/klant': typeof KlantIndexRoute
   '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/magazijn': typeof MagazijnRouteWithChildren
   '/producten': typeof ProductenRoute
   '/magazijn/catalogus': typeof MagazijnCatalogusRoute
+  '/magazijn/v2': typeof MagazijnV2Route
   '/klant/': typeof KlantIndexRoute
   '/klant/document/$retourId': typeof KlantDocumentRetourIdRoute
   '/klant/print/$retourId': typeof KlantPrintRetourIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
+    | '/magazijn/v2'
     | '/klant/'
     | '/klant/document/$retourId'
     | '/klant/print/$retourId'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
+    | '/magazijn/v2'
     | '/klant'
     | '/klant/document/$retourId'
     | '/klant/print/$retourId'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/magazijn'
     | '/producten'
     | '/magazijn/catalogus'
+    | '/magazijn/v2'
     | '/klant/'
     | '/klant/document/$retourId'
     | '/klant/print/$retourId'
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KlantIndexRouteImport
       parentRoute: typeof KlantRoute
     }
+    '/magazijn/v2': {
+      id: '/magazijn/v2'
+      path: '/v2'
+      fullPath: '/magazijn/v2'
+      preLoaderRoute: typeof MagazijnV2RouteImport
+      parentRoute: typeof MagazijnRoute
+    }
     '/magazijn/catalogus': {
       id: '/magazijn/catalogus'
       path: '/catalogus'
@@ -284,11 +303,13 @@ const KlantRouteWithChildren = KlantRoute._addFileChildren(KlantRouteChildren)
 
 interface MagazijnRouteChildren {
   MagazijnCatalogusRoute: typeof MagazijnCatalogusRoute
+  MagazijnV2Route: typeof MagazijnV2Route
   MagazijnPalletIdRoute: typeof MagazijnPalletIdRoute
 }
 
 const MagazijnRouteChildren: MagazijnRouteChildren = {
   MagazijnCatalogusRoute: MagazijnCatalogusRoute,
+  MagazijnV2Route: MagazijnV2Route,
   MagazijnPalletIdRoute: MagazijnPalletIdRoute,
 }
 

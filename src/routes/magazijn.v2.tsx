@@ -25,7 +25,7 @@ import palletPhotoDemo from "@/assets/pallet-qr-demo.jpg";
 import { Coach } from "@/lib/magazijn-v2/Coach";
 
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/magazijn/v2")({
   head: () => ({
     meta: [
       { title: "Districo — Leeggoed ontvangen" },

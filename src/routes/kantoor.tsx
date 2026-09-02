@@ -512,7 +512,7 @@ function KantoorPage() {
             {retours.length > 0 && (
               <tfoot>
                 <tr className="border-t bg-muted/40 font-medium">
-                  <td className="px-4 py-3" colSpan={2}>
+                  <td className="px-4 py-3" colSpan={3}>
                     Totaal {tab === "klant" ? "klanten" : "leveranciers"}
                   </td>
                   <td className="px-4 py-3">{t.pallets}</td>

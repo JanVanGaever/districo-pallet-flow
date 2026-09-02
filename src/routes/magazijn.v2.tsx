@@ -99,10 +99,15 @@ function App() {
     <div className="min-h-screen bg-neutral-100 text-neutral-900">
       <TopBar retour={retour} demo={demo} onToggleDemo={toggleDemo} />
       <main className="mx-auto max-w-3xl px-4 py-6 pb-32 [font-variant-numeric:tabular-nums]">
-        {screen.name === "start" && (
+        {!ready && (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-center text-neutral-500">
+            Klanten en producten laden…
+          </div>
+        )}
+        {ready && screen.name === "start" && (
           <StartScreen onPick={startRetour} onSearch={() => setScreen({ name: "search" })} />
         )}
-        {screen.name === "search" && (
+        {ready && screen.name === "search" && (
           <SearchScreen onPick={(id) => startRetour(id)} onBack={() => setScreen({ name: "start" })} />
         )}
         {screen.name === "retour" && retour && (
@@ -488,6 +493,7 @@ function AddPalletScreen({
   const [newProductId, setNewProductId] = useState<string | null>(null);
   const [newAantal, setNewAantal] = useState<number>(1);
   const [cat, setCat] = useState<string>("Alle");
+  const [pq, setPq] = useState("");
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
 
@@ -522,7 +528,12 @@ function AddPalletScreen({
   const setLine = (i: number, patch: Partial<PalletLine>) =>
     setLines((ls) => ls.map((l, k) => (k === i ? { ...l, ...patch } : l)));
 
-  const products = PRODUCTS.filter((p) => cat === "Alle" || p.cat === cat);
+  const products = useMemo(() => {
+    const s = pq.trim().toLowerCase();
+    return PRODUCTS.filter(
+      (p) => (cat === "Alle" || p.cat === cat) && (!s || p.naam.toLowerCase().includes(s)),
+    ).slice(0, 200);
+  }, [cat, pq]);
 
   return (
     <div className="space-y-5">
@@ -944,6 +955,12 @@ function AddPalletScreen({
                     </button>
                   ))}
                 </div>
+                <input
+                  value={pq}
+                  onChange={(e) => setPq(e.target.value)}
+                  placeholder="Zoek product"
+                  className="h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-base"
+                />
                 <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
                   {products.map((p) => (
                     <button

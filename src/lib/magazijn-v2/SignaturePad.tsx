@@ -86,18 +86,18 @@ export function SignaturePad({ onChange }: Props) {
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
-        className="block h-48 w-full touch-none rounded-xl border-2 border-dashed border-neutral-300 bg-white"
+        className="block h-48 w-full touch-none rounded-xl border-2 border-dashed border-border bg-card"
       />
       <div className="mt-2 flex justify-end gap-2">
         <button
           onClick={simulate}
-          className="h-10 rounded-lg border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
+          className="h-10 rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground"
         >
           Handtekening simuleren
         </button>
         <button
           onClick={clear}
-          className="h-10 rounded-lg border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-700"
+          className="h-10 rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground"
         >
           Wissen
         </button>

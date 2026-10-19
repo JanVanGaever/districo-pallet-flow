@@ -9,44 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ProductenRouteImport } from './routes/producten'
-import { Route as MagazijnRouteImport } from './routes/magazijn'
-import { Route as LeverancierRouteImport } from './routes/leverancier'
-import { Route as KlantRouteImport } from './routes/klant'
-import { Route as KantoorRouteImport } from './routes/kantoor'
-import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MagazijnIndexRouteImport } from './routes/magazijn.index'
+import { Route as InstellingenRouteImport } from './routes/instellingen'
+import { Route as KantoorRouteImport } from './routes/kantoor'
+import { Route as KlantRouteImport } from './routes/klant'
+import { Route as LeverancierRouteImport } from './routes/leverancier'
+import { Route as MagazijnRouteImport } from './routes/magazijn'
+import { Route as ProductenRouteImport } from './routes/producten'
 import { Route as KlantIndexRouteImport } from './routes/klant.index'
-import { Route as MagazijnV2RouteImport } from './routes/magazijn.v2'
+import { Route as MagazijnIndexRouteImport } from './routes/magazijn.index'
 import { Route as MagazijnCatalogusRouteImport } from './routes/magazijn.catalogus'
-import { Route as MagazijnPalletIdRouteImport } from './routes/magazijn.pallet.$id'
-import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
+import { Route as MagazijnV2RouteImport } from './routes/magazijn.v2'
 import { Route as KlantDocumentRetourIdRouteImport } from './routes/klant.document.$retourId'
+import { Route as KlantPrintRetourIdRouteImport } from './routes/klant.print.$retourId'
+import { Route as MagazijnPalletIdRouteImport } from './routes/magazijn.pallet.$id'
 
-const ProductenRoute = ProductenRouteImport.update({
-  id: '/producten',
-  path: '/producten',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MagazijnRoute = MagazijnRouteImport.update({
-  id: '/magazijn',
-  path: '/magazijn',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LeverancierRoute = LeverancierRouteImport.update({
-  id: '/leverancier',
-  path: '/leverancier',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KlantRoute = KlantRouteImport.update({
-  id: '/klant',
-  path: '/klant',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KantoorRoute = KantoorRouteImport.update({
-  id: '/kantoor',
-  path: '/kantoor',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstellingenRoute = InstellingenRouteImport.update({
@@ -54,24 +34,39 @@ const InstellingenRoute = InstellingenRouteImport.update({
   path: '/instellingen',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const KantoorRoute = KantoorRouteImport.update({
+  id: '/kantoor',
+  path: '/kantoor',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MagazijnIndexRoute = MagazijnIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MagazijnRoute,
+const KlantRoute = KlantRouteImport.update({
+  id: '/klant',
+  path: '/klant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeverancierRoute = LeverancierRouteImport.update({
+  id: '/leverancier',
+  path: '/leverancier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MagazijnRoute = MagazijnRouteImport.update({
+  id: '/magazijn',
+  path: '/magazijn',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductenRoute = ProductenRouteImport.update({
+  id: '/producten',
+  path: '/producten',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const KlantIndexRoute = KlantIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => KlantRoute,
 } as any)
-const MagazijnV2Route = MagazijnV2RouteImport.update({
-  id: '/v2',
-  path: '/v2',
+const MagazijnIndexRoute = MagazijnIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => MagazijnRoute,
 } as any)
 const MagazijnCatalogusRoute = MagazijnCatalogusRouteImport.update({
@@ -79,20 +74,25 @@ const MagazijnCatalogusRoute = MagazijnCatalogusRouteImport.update({
   path: '/catalogus',
   getParentRoute: () => MagazijnRoute,
 } as any)
-const MagazijnPalletIdRoute = MagazijnPalletIdRouteImport.update({
-  id: '/pallet/$id',
-  path: '/pallet/$id',
+const MagazijnV2Route = MagazijnV2RouteImport.update({
+  id: '/v2',
+  path: '/v2',
   getParentRoute: () => MagazijnRoute,
+} as any)
+const KlantDocumentRetourIdRoute = KlantDocumentRetourIdRouteImport.update({
+  id: '/document/$retourId',
+  path: '/document/$retourId',
+  getParentRoute: () => KlantRoute,
 } as any)
 const KlantPrintRetourIdRoute = KlantPrintRetourIdRouteImport.update({
   id: '/print/$retourId',
   path: '/print/$retourId',
   getParentRoute: () => KlantRoute,
 } as any)
-const KlantDocumentRetourIdRoute = KlantDocumentRetourIdRouteImport.update({
-  id: '/document/$retourId',
-  path: '/document/$retourId',
-  getParentRoute: () => KlantRoute,
+const MagazijnPalletIdRoute = MagazijnPalletIdRouteImport.update({
+  id: '/pallet/$id',
+  path: '/pallet/$id',
+  getParentRoute: () => MagazijnRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -203,39 +203,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/producten': {
-      id: '/producten'
-      path: '/producten'
-      fullPath: '/producten'
-      preLoaderRoute: typeof ProductenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/magazijn': {
-      id: '/magazijn'
-      path: '/magazijn'
-      fullPath: '/magazijn'
-      preLoaderRoute: typeof MagazijnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/leverancier': {
-      id: '/leverancier'
-      path: '/leverancier'
-      fullPath: '/leverancier'
-      preLoaderRoute: typeof LeverancierRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/klant': {
-      id: '/klant'
-      path: '/klant'
-      fullPath: '/klant'
-      preLoaderRoute: typeof KlantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kantoor': {
-      id: '/kantoor'
-      path: '/kantoor'
-      fullPath: '/kantoor'
-      preLoaderRoute: typeof KantoorRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/instellingen': {
@@ -245,19 +217,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstellingenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/kantoor': {
+      id: '/kantoor'
+      path: '/kantoor'
+      fullPath: '/kantoor'
+      preLoaderRoute: typeof KantoorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/magazijn/': {
-      id: '/magazijn/'
-      path: '/'
-      fullPath: '/magazijn/'
-      preLoaderRoute: typeof MagazijnIndexRouteImport
-      parentRoute: typeof MagazijnRoute
+    '/klant': {
+      id: '/klant'
+      path: '/klant'
+      fullPath: '/klant'
+      preLoaderRoute: typeof KlantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leverancier': {
+      id: '/leverancier'
+      path: '/leverancier'
+      fullPath: '/leverancier'
+      preLoaderRoute: typeof LeverancierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/magazijn': {
+      id: '/magazijn'
+      path: '/magazijn'
+      fullPath: '/magazijn'
+      preLoaderRoute: typeof MagazijnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/producten': {
+      id: '/producten'
+      path: '/producten'
+      fullPath: '/producten'
+      preLoaderRoute: typeof ProductenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/klant/': {
       id: '/klant/'
@@ -266,11 +259,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KlantIndexRouteImport
       parentRoute: typeof KlantRoute
     }
-    '/magazijn/v2': {
-      id: '/magazijn/v2'
-      path: '/v2'
-      fullPath: '/magazijn/v2'
-      preLoaderRoute: typeof MagazijnV2RouteImport
+    '/magazijn/': {
+      id: '/magazijn/'
+      path: '/'
+      fullPath: '/magazijn/'
+      preLoaderRoute: typeof MagazijnIndexRouteImport
       parentRoute: typeof MagazijnRoute
     }
     '/magazijn/catalogus': {
@@ -280,12 +273,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MagazijnCatalogusRouteImport
       parentRoute: typeof MagazijnRoute
     }
-    '/magazijn/pallet/$id': {
-      id: '/magazijn/pallet/$id'
-      path: '/pallet/$id'
-      fullPath: '/magazijn/pallet/$id'
-      preLoaderRoute: typeof MagazijnPalletIdRouteImport
+    '/magazijn/v2': {
+      id: '/magazijn/v2'
+      path: '/v2'
+      fullPath: '/magazijn/v2'
+      preLoaderRoute: typeof MagazijnV2RouteImport
       parentRoute: typeof MagazijnRoute
+    }
+    '/klant/document/$retourId': {
+      id: '/klant/document/$retourId'
+      path: '/document/$retourId'
+      fullPath: '/klant/document/$retourId'
+      preLoaderRoute: typeof KlantDocumentRetourIdRouteImport
+      parentRoute: typeof KlantRoute
     }
     '/klant/print/$retourId': {
       id: '/klant/print/$retourId'
@@ -294,12 +294,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KlantPrintRetourIdRouteImport
       parentRoute: typeof KlantRoute
     }
-    '/klant/document/$retourId': {
-      id: '/klant/document/$retourId'
-      path: '/document/$retourId'
-      fullPath: '/klant/document/$retourId'
-      preLoaderRoute: typeof KlantDocumentRetourIdRouteImport
-      parentRoute: typeof KlantRoute
+    '/magazijn/pallet/$id': {
+      id: '/magazijn/pallet/$id'
+      path: '/pallet/$id'
+      fullPath: '/magazijn/pallet/$id'
+      preLoaderRoute: typeof MagazijnPalletIdRouteImport
+      parentRoute: typeof MagazijnRoute
     }
   }
 }
